@@ -161,4 +161,18 @@ public class Team implements Serializable, Comparable<Team>  {
                     pointers[0] = 0;
         }
     }
+
+    public void addRandoms() {
+        switch (randomLocation){
+            case 1:
+                for(int i = 0; i < numRandoms; i++)
+                    this.fighters.add(0,random);
+                break;
+            case 2:
+                for(int i = 0; i < numRandoms; i++)
+                    this.fighters.add(random);
+                break;
+
+        }
+    }
 }

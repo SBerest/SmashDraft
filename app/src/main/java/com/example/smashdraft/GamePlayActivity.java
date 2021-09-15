@@ -118,22 +118,6 @@ public class GamePlayActivity extends AppCompatActivity implements View.OnClickL
                 break;
         }
 
-        /*
-        if(NUMRANDOMS != 0){
-            boolean randomAtEnd = sharedPreferences.getBoolean("randomEnd",true);
-            Fighter random = new Fighter(R.drawable.img_00_question,"Random");
-            for(int i = 0; i < NUMTEAMS; i++){
-                for(int j = 0; j < NUMRANDOMS; j++){
-                    if(randomAtEnd) {
-                        teams.get(i).appendFighter(random);
-                    }
-                    else{
-                        teams.get(i).addFighter(random,0);
-                    }
-                }
-            }
-        }*/
-
         recyclerView = findViewById(R.id.gameplay_draft_list);
         adapter = new GamePlayRecyclerAdapter(this, teams, this);
 
@@ -231,7 +215,6 @@ public class GamePlayActivity extends AppCompatActivity implements View.OnClickL
         return new int[] {from_pos,to_pos};
     }
 
-    //TODO doesnt work
     private void updateLoseImage(){
         if(focusTeam != -1) {
             this.win_counter.setText(Integer.toString(teams.get(focusTeam).getWins()));
@@ -272,8 +255,9 @@ public class GamePlayActivity extends AppCompatActivity implements View.OnClickL
             Log.d(TAG,"Starting Win");
 
             Intent intent = new Intent(this, WinningActivity.class);
-            intent.putExtra("team",focusTeam);
+            intent.putExtra("team",teams.get(focusTeam).getTeam());
             Bundle bundle = new Bundle();
+            teams.get(focusTeam).addRandoms();
             bundle.putSerializable("comp",teams.get(focusTeam).getFighters());
             intent.putExtras(bundle);
 

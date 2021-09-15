@@ -20,6 +20,7 @@
     <string name="RedTeam">Red Team</string>
     <string name="GreenTeam">Green Team</string>
     <string name="YellowTeam">Yellow Team</string>
+    <string name="fireBackground">firebackground</string>
     <string-array name="gameModes">
         <item>Draft As You Go</item>
         <item>Draft Up Front</item>
