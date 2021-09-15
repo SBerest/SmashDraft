@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/linear_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ImageView
+        android:id="@+id/gameplay_char_0"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:contentDescription="@string/player_1_s_character"
+        app:layout_constraintEnd_toStartOf="@+id/gameplay_char_1"
+        app:layout_constraintHorizontal_chainStyle="packed"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:srcCompat="@drawable/img_01_mario" />
+
+    <ImageView
+        android:id="@+id/gameplay_char_1"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:contentDescription="@string/player_2_s_character"
+        app:layout_constraintEnd_toStartOf="@id/gameplay_char_2"
+        app:layout_constraintStart_toEndOf="@+id/gameplay_char_0"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:srcCompat="@drawable/img_02_dk" />
+
+    <ImageView
+        android:id="@+id/gameplay_char_2"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:contentDescription="@string/player_2_s_character"
+        app:layout_constraintEnd_toStartOf="@id/gameplay_char_3"
+        app:layout_constraintStart_toEndOf="@+id/gameplay_char_1"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:srcCompat="@drawable/img_03_link" />
+
+    <ImageView
+        android:id="@+id/gameplay_char_3"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:contentDescription="@string/player_2_s_character"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/gameplay_char_2"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:srcCompat="@drawable/img_04_samus"
+        />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

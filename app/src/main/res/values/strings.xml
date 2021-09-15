@@ -1,0 +1,30 @@
+<resources>
+    <string name="app_name">SmashDraft</string>
+    <string name="charactername">CharacterName</string>
+    <string name="characterimage">characterImage</string>
+    <string name="draftpick">Draftpick</string>
+    <string name="action_visibile">visibilitiy button</string>
+    <string name="skip">Skip</string>
+    <string name="losses_image">losses_image</string>
+    <string name="_0">0</string>
+    <string name="player_1_s_character">player 1\'s character</string>
+    <string name="player_2_s_character">player 2\'s character</string>
+    <string name="smash_draft">Smash Draft</string>
+    <string name="smash_logo">Smash Logo</string>
+    <string name="winningteam">WinningTeam</string>
+    <string name="winning_team_character">Winning Team Character</string>
+    <string name="action_sort">action sort</string>
+    <string name="action_view">action view</string>
+    <string name="winGameplay">Win</string>
+    <string name="BlueTeam">Blue Team</string>
+    <string name="RedTeam">Red Team</string>
+    <string name="GreenTeam">Green Team</string>
+    <string name="YellowTeam">Yellow Team</string>
+    <string-array name="gameModes">
+        <item>Draft As You Go</item>
+        <item>Draft Up Front</item>
+        <item>Locked In Random</item>
+        <item>Columns</item>
+    </string-array>
+
+</resources>

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/parent_layout"
+    android:layout_width="match_parent"
+    android:layout_height="50dp"
+    android:background="@color/black">
+
+    <ImageView
+        android:id="@+id/autoCharacterImage"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:contentDescription="@string/characterimage"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:layout_conversion_wrapHeight="263"
+        tools:layout_conversion_wrapWidth="197"
+        tools:srcCompat="@drawable/img_01_mario" />
+
+    <TextView
+        android:id="@+id/autoCharacterName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginLeft="8dp"
+        android:text="@string/charactername"
+        android:textColor="@color/white"
+        android:textSize="30sp"
+        app:layout_constraintLeft_toRightOf="@+id/autoCharacterImage"
+        app:layout_constraintStart_toEndOf="@+id/autoCharacterImage"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:layout_conversion_wrapHeight="108"
+        tools:layout_conversion_wrapWidth="555" />
+</androidx.constraintlayout.widget.ConstraintLayout>

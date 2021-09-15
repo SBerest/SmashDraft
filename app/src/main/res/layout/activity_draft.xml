@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+xmlns:android="http://schemas.android.com/apk/res/android"
+android:id="@+id/main_layout"
+android:layout_width="match_parent"
+android:layout_height="match_parent"
+android:background="#000">
+
+    <AutoCompleteTextView
+        android:id="@+id/autoCompleteTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:completionThreshold="1"
+        android:gravity="end"
+        android:hint="@android:string/search_go"
+        android:textColorHint="@color/white"
+        android:textColorHighlight="@color/white"
+        android:textColor="@color/black"
+        android:textAlignment="textEnd" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/draftRecyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@+id/autoCompleteTextView" />
+</RelativeLayout>

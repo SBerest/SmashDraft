@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <PreferenceCategory
+        android:title="Gamemode">
+        <ListPreference
+            android:title="Draft as you go"
+            android:summary="Alternate between drafting and playing. \nTeams: 2 - 4"
+            android:key="gameMode"
+            android:entries="@array/gameModes"
+            android:entryValues="@array/gameModes"
+            android:defaultValue="0"
+            app:iconSpaceReserved="false"/>
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:title="Teams">
+        <SeekBarPreference
+            android:title="Amount of Teams"
+            android:key="numTeams"
+            android:max="4"
+            app:min="2"
+            app:defaultValue="4"
+            app:showSeekBarValue="true"
+            app:updatesContinuously="false"
+            app:selectable="false"
+            app:iconSpaceReserved="false"/>
+
+        <SeekBarPreference
+            android:title="Amount of Blue Team Players"
+            android:key="numBlue"
+            android:max="4"
+            app:min="1"
+            app:defaultValue="2"
+            app:showSeekBarValue="true"
+            app:updatesContinuously="false"
+            app:selectable="false"
+            app:icon="@drawable/smash_blue"/>
+
+        <SeekBarPreference
+            android:title="Amount of Red Team Players"
+            android:key="numRed"
+            android:max="4"
+            app:min="1"
+            app:defaultValue="2"
+            app:showSeekBarValue="true"
+            app:updatesContinuously="false"
+            app:selectable="false"
+            app:icon="@drawable/smash_red" />
+
+        <SeekBarPreference
+            android:title="Amount of Green Team Players"
+            android:key="numGreen"
+            android:max="4"
+            app:min="1"
+            app:defaultValue="2"
+            app:showSeekBarValue="true"
+            app:updatesContinuously="false"
+            app:selectable="false"
+            app:icon="@drawable/smash_green"/>
+
+        <SeekBarPreference
+            android:title="Amount of Yellow Team Players"
+            android:key="numYellow"
+            android:max="4"
+            app:min="1"
+            app:defaultValue="2"
+            app:showSeekBarValue="true"
+            app:updatesContinuously="false"
+            app:selectable="false"
+            app:icon="@drawable/smash_yellow"/>
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:title="Characters">
+        <SeekBarPreference
+            android:title="Number of Characters"
+            android:key="numCharacters"
+            android:max="18"
+            app:min="5"
+            app:defaultValue="10"
+            app:showSeekBarValue="true"
+            app:updatesContinuously="false"
+            app:selectable="false"
+            app:icon="@drawable/img_01_mario"/>
+
+        <SeekBarPreference
+            android:title="Number of Randoms"
+            android:key="numRandoms"
+            android:max="4"
+            app:min="0"
+            app:defaultValue="2"
+            app:showSeekBarValue="true"
+            app:updatesContinuously="false"
+            app:selectable="false"
+            app:icon="@drawable/img_00_question"/>
+
+        <SwitchPreference
+            android:title="Randoms at the End"
+            android:summary="The random character(s) will be at the end."
+            android:key="randomSwitch"
+            android:defaultValue="true"
+            app:iconSpaceReserved="false"/>
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:title="Skips">
+        <SeekBarPreference
+            android:title="Amount of Skips"
+            android:summary="Allow a team to skip 1 character."
+            android:key="numSkips"
+            android:max="3"
+            app:min="0"
+            app:defaultValue="1"
+            app:showSeekBarValue="true"
+            app:updatesContinuously="false"
+            app:selectable="false"
+            app:iconSpaceReserved="false"/>
+
+        <SwitchPreference
+            android:title="When can you skip?"
+            android:key="skipSwitch"
+            android:defaultValue="true"
+            app:summary="A team can skip at any time."
+            app:iconSpaceReserved="false"/>
+    </PreferenceCategory>
+
+</PreferenceScreen>
