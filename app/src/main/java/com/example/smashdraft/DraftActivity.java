@@ -42,52 +42,79 @@ public class DraftActivity extends AppCompatActivity implements DraftRecyclerAda
 
     private AutoCompleteTextView editText;
 
-    private ArrayList<Fighter> fighters = new ArrayList<>(); //all fighter_cell
+    private final ArrayList<Fighter> fighters = new ArrayList<>(); //all fighter_cell
     private final ArrayList<Fighter> fullFighters = new ArrayList<>();
     private final ArrayList<Fighter> alphaSortedFighters = new ArrayList<>();
-
-    private ArrayList<ArrayList<Fighter>> spDrafted = new ArrayList<>();
 
     RecyclerView mRecyclerView;
     DraftRecyclerAdapter adapter;
 
     private Menu menu;
-
+    int indexOfRecentRandom;
     boolean eye = true;
     boolean alphaSort = false;
     final Context mContext = this;
     private int DRAFTINGNUM;
     boolean auto;
+    static String GAMEMODE;
+    String PREVACTIVITY;
 
-    int spTeam = 0;
+    ArrayList<ArrayList<Fighter>> spDrafted = new ArrayList<>();
+
+    int spTeam;
     private ArrayList<Integer> draftOrder;
-    private int pointer = 0;
+    private int draftOrderIndex = 0;
     boolean listView = true;
     ArrayList<Fighter> lastDrafted;
-
 
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        Log.d(TAG,"onCreate");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_draft);
 
         SharedPreferences sharedPreferences = this.getSharedPreferences("settings", Context.MODE_PRIVATE);
-        String GAMEMODE = sharedPreferences.getString("gameMode", "");
+        GAMEMODE = sharedPreferences.getString("gameMode", "Draft As You Go");
         NUMTEAMS = sharedPreferences.getInt("numTeams", 4);
-        if (NUMTEAMS == 2) {
-            draftOrder = new ArrayList<>(Arrays.asList(0, 1));
-        } else if (NUMTEAMS == 3) {
-            draftOrder = new ArrayList<>(Arrays.asList(0, 1, 2, 2, 1, 0));
-        } else if (NUMTEAMS == 4) {
-            draftOrder = new ArrayList<>(Arrays.asList(0, 1, 2, 3, 3, 2, 1, 0));
+        if (!GAMEMODE.equals("Draft As You Go")) {
+            if (NUMTEAMS == 2) {
+                draftOrder = new ArrayList<>(Arrays.asList(0, 1));
+            } else if (NUMTEAMS == 3) {
+                draftOrder = new ArrayList<>(Arrays.asList(0, 1, 2, 2, 1, 0));
+            } else if (NUMTEAMS == 4) {
+                draftOrder = new ArrayList<>(Arrays.asList(0, 1, 2, 3, 3, 2, 1, 0));
+            }
+        }
+        lastDrafted = new ArrayList<>();
+        switch(NUMTEAMS){
+            case 4:
+                if (((ManagingApplication) getApplicationContext()).team3 == null)
+                    ((ManagingApplication) getApplicationContext()).team3 = new Team(new ArrayList<>(), 3, sharedPreferences);
+                spDrafted.add(0, ((ManagingApplication) getApplicationContext()).team3.getFighters());
+                lastDrafted.addAll(spDrafted.get(0));
+            case 3:
+                if (((ManagingApplication) getApplicationContext()).team2 == null)
+                    ((ManagingApplication) getApplicationContext()).team2 = new Team(new ArrayList<>(), 2, sharedPreferences);
+                spDrafted.add(0, ((ManagingApplication) getApplicationContext()).team2.getFighters());
+                lastDrafted.addAll(spDrafted.get(0));
+            case 2:
+                if (((ManagingApplication) getApplicationContext()).team0 == null)
+                    ((ManagingApplication) getApplicationContext()).team0 = new Team(new ArrayList<>(), 0, sharedPreferences);
+                if (((ManagingApplication) getApplicationContext()).team1 == null)
+                    ((ManagingApplication) getApplicationContext()).team1 = new Team(new ArrayList<>(), 1, sharedPreferences);
+                spDrafted.add(0, ((ManagingApplication) getApplicationContext()).team0.getFighters());
+                lastDrafted.addAll(spDrafted.get(0));
+                spDrafted.add(1, ((ManagingApplication) getApplicationContext()).team1.getFighters());
+                lastDrafted.addAll(spDrafted.get(1));
         }
 
-        for (int i = 0; i < NUMTEAMS; i++)
-            spDrafted.add(new ArrayList<>());
+        lastDrafted.add(new Fighter(R.drawable.img_00_question,"Random"));
+        indexOfRecentRandom = lastDrafted.size()-1;
+
+        Log.d(TAG,"Last Drafted"+lastDrafted.toString());
 
         this.DRAFTINGNUM = sharedPreferences.getInt("numCharacters", 8);
-        Log.d(TAG, "Drafting Num: " + DRAFTINGNUM);
 
         //set up auto complete bar
         ArrayList<String> mNames = new ArrayList<>();
@@ -102,24 +129,54 @@ public class DraftActivity extends AppCompatActivity implements DraftRecyclerAda
         actv.setAdapter(autoAdapter);//setting the adapter data into the AutoCompleteTextView
         actv.setTextColor(Color.parseColor("#FF7F00"));
         actv.setOnFocusChangeListener((v, hasFocus) -> auto = hasFocus);
-        actv.setOnItemClickListener((parent, arg1, pos, id) -> confirmDraft(getFighter(parent.getItemAtPosition(pos).toString())));
+        actv.setOnItemClickListener((parent, arg1, pos, id) -> confirmDraft((Fighter)parent.getItemAtPosition(pos)));
 
-        lastDrafted = new ArrayList<>();
-
-        initImageBitmaps();
+        initFighters();
+        Log.d(TAG,"FIRST CHARACTER:"+fighters.get(0));
         initRecyclerView();
-        resetPositions();
 
-        //TODO implement Draft as you go, differentiate in code between that and Draft up front (current code)
-        //TODO implement Columns
         switch (GAMEMODE) {
+            case "Draft As You Go":
+                Intent intent = this.getIntent();
+                PREVACTIVITY = intent.getStringExtra("prevActivity");
+                if(spDrafted.get(0).size() != 0) {
+                    draftOrder = intent.getIntegerArrayListExtra("draftOrder");
+                }if(spDrafted.get(0).size() == 0 || draftOrder == null){
+                    if (NUMTEAMS == 2) {
+                        draftOrder = new ArrayList<>(Arrays.asList(0, 0, 1, 1));
+                    } else if (NUMTEAMS == 3) {
+                        draftOrder = new ArrayList<>(Arrays.asList(0, 0, 1, 1, 2, 2));
+                    } else if (NUMTEAMS == 4) {
+                        draftOrder = new ArrayList<>(Arrays.asList(0, 0, 1, 1, 2, 2, 3, 3));
+                    }
+                }
+                assert draftOrder != null;
+                spTeam = draftOrder.get(0);
+                Window window = getWindow();
+                window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+                switch (draftOrder.get(0)){
+                    case 0:
+                        window.setStatusBarColor(getResources().getColor(R.color.darker_red,null));
+                        break;
+                    case 1:
+                        window.setStatusBarColor(getResources().getColor(R.color.darker_blue,null));
+                        break;
+                    case 2:
+                        window.setStatusBarColor(getResources().getColor(R.color.darker_green,null));
+                        break;
+                    case 3:
+                        window.setStatusBarColor(getResources().getColor(R.color.darker_yellow,null));
+                        break;
+                }
+                DRAFTINGNUM = draftOrder.size();
+                break;
             case "Locked In Random":
                 ArrayList<Fighter> randomFighters = new ArrayList<>(fighters);
                 Collections.shuffle(randomFighters);
                 for (int i = 0; i < NUMTEAMS; i++) {
                     for (int j = 0; j < DRAFTINGNUM; j++) {
                         Fighter tempFighter = randomFighters.get(0);
-                        randomFighters.remove(tempFighter);
+                        randomFighters.remove(0);
                         spDrafted.get(i).add(tempFighter);
                     }
                 }
@@ -127,17 +184,47 @@ public class DraftActivity extends AppCompatActivity implements DraftRecyclerAda
                 goToGameplay();
                 break;
             case "Columns":
+                for(int i = 0; i < 12; i++){
+                    spDrafted.get(0).add(fighters.get(i));
+                    spDrafted.get(0).add(fighters.get(12+i));
+                    spDrafted.get(0).add(fighters.get(24+i));
+                    spDrafted.get(0).add(fighters.get(36+i));
 
+                    spDrafted.get(1).add(fighters.get(11-i));
+                    spDrafted.get(1).add(fighters.get(23-i));
+                    spDrafted.get(1).add(fighters.get(35-i));
+                    spDrafted.get(1).add(fighters.get(47-i));
+                }
+                for(int i = 0; i < 12; i+=2){
+                    spDrafted.get(0).add(fighters.get(59-i));
+                    spDrafted.get(0).add(fighters.get(58-i));
+                    spDrafted.get(0).add(fighters.get(71-i));
+                    spDrafted.get(0).add(fighters.get(70-i));
+
+                    spDrafted.get(1).add(fighters.get(48+i));
+                    spDrafted.get(1).add(fighters.get(49+i));
+                    spDrafted.get(1).add(fighters.get(60+i));
+                    spDrafted.get(1).add(fighters.get(61+i));
+                }
+
+                for(int i = 0; i < 9; i++){
+                    spDrafted.get(0).add(fighters.get(72+i));
+                    spDrafted.get(1).add(fighters.get(81-i));
+                }
+
+                Log.d(TAG,spDrafted.get(0)+" team 0");
+                Log.d(TAG,spDrafted.get(1)+" team 1");
+                goToGameplay();
                 break;
         }
 
         fullFighters.addAll(fighters);
         alphaSortedFighters.addAll(fighters);
         Collections.sort(alphaSortedFighters);
-        resetPositions(alphaSortedFighters);
     }
 
     public boolean onCreateOptionsMenu(Menu menu) {
+        Log.d(TAG,"onCreateOptionsMenu");
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.change_view, menu);
         inflater.inflate(R.menu.change_sort, menu);
@@ -167,9 +254,9 @@ public class DraftActivity extends AppCompatActivity implements DraftRecyclerAda
             Log.d(TAG, "sort clicked");
             alphaSort = !alphaSort;
             if (alphaSort) {
-                menu.getItem(1).setIcon(ContextCompat.getDrawable(this, R.drawable.symb_atoz));
-            } else {
                 menu.getItem(1).setIcon(ContextCompat.getDrawable(this, R.drawable.symb_1to9));
+            } else {
+                menu.getItem(1).setIcon(ContextCompat.getDrawable(this, R.drawable.symb_atoz));
             }
             changeOrderOfDrafted();
             return true;
@@ -193,56 +280,31 @@ public class DraftActivity extends AppCompatActivity implements DraftRecyclerAda
 
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     private void changeVisibilityOfDrafted() {
+        Log.d(TAG,"changeVisibilityOfDrafted");
         Parcelable recyclerViewState;
         recyclerViewState = Objects.requireNonNull(mRecyclerView.getLayoutManager()).onSaveInstanceState();
         if (eye) {
             fighters.clear();
-            ArrayList<Fighter> sortedFighter = new ArrayList<>();
-
-            if (alphaSort && alphaSortedFighters != null) {
-                fighters.addAll(alphaSortedFighters);
-
-                for (int i = 0; i < NUMTEAMS; i++) {
-                    for (Fighter fighter : spDrafted.get(i)) {
-                        sortedFighter.add(alphaSortedFighters.get(alphaSortedFighters.indexOf(fighter)));
-                    }
-                }
-
-                resetPositions(alphaSortedFighters);
-                sortedFighter.sort(new FighterPositionComparator());
-                for (Fighter fighter : sortedFighter) {
-                    Log.d(TAG, fighter.getName() + " " + fighter.getPosition());
-                    adapter.notifyItemInserted(fighter.getPosition());
-                }
-                resetPositions();
-            } else if (fullFighters != null) {
-                fighters.addAll(fullFighters);
-
-                for (int i = 0; i < NUMTEAMS; i++) {
-                    for (Fighter fighter : spDrafted.get(i)) {
-                        sortedFighter.add(fullFighters.get(fullFighters.indexOf(fighter)));
-                    }
-                }
-
-                resetPositions();
-                sortedFighter.sort(new FighterPositionComparator());
-                for (Fighter fighter : sortedFighter) {
-                    Log.d(TAG, fighter.getName() + " " + fighter.getPosition());
-                    adapter.notifyItemInserted(fighter.getPosition());
-                }
-                resetPositions();
-            }
-
-        } else {
-            eyeClosed();
-        }
-
-        resetPositions();
+            if (alphaSort && alphaSortedFighters != null) changeVisibilityHelper(alphaSortedFighters);
+            else if (fullFighters != null) changeVisibilityHelper(fullFighters);
+        } else eyeClosed();
         mRecyclerView.getLayoutManager().onRestoreInstanceState(recyclerViewState);
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
+    void changeVisibilityHelper(ArrayList<Fighter> arrayList){
+        fighters.addAll(arrayList);
+        ArrayList<Integer> draftedPos = new ArrayList<>();
+        for (int i = 0; i < NUMTEAMS; i++)
+            for (Fighter fighter : spDrafted.get(i)) {
+                arrayList.indexOf(fighter);
+                draftedPos.add(arrayList.indexOf(fighter));
+            }
+        Collections.sort(draftedPos);
+        for (int pos : draftedPos)
+            adapter.notifyItemInserted(pos);
+    }
 
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     private void changeOrderOfDrafted() {
         Log.d(TAG, "changeOrderOfDrafted");
         if (alphaSort) {
@@ -258,62 +320,58 @@ public class DraftActivity extends AppCompatActivity implements DraftRecyclerAda
                 eyeClosed();
             }
         }
-
         adapter.notifyDataSetChanged();
-        resetPositions();
     }
 
     private void eyeClosed() {
+        Log.d(TAG,"eyeClosed");
         //resetPositions must be called multiple times
         for (int i = 0; i < NUMTEAMS; i++) {
+            Log.d(TAG,"EyeClosed spDrafted:"+spDrafted.toString());
             for (Fighter fighter : spDrafted.get(i)) {
+                int pos = fighters.indexOf(fighter);
                 fighters.remove(fighter);
-                adapter.notifyItemRemoved(fighter.getPosition());
-                resetPositions();
+                adapter.notifyItemRemoved(pos);
+
             }
         }
-    }
-
-    int draftedTeam(Fighter some_fighter) {
-        for (int i = 0; i < NUMTEAMS; i++) {
-            if (spDrafted.get(i).contains(some_fighter))
-                return i;
-        }
-        return -1;
+        Log.d(TAG,"EyeClosed fighters:"+fighters);
     }
 
     void nextTeam() {
-        if (pointer < draftOrder.size() - 1) {
-            pointer += 1;
-            spTeam = draftOrder.get(pointer);
+        Log.d(TAG,"nextTeam");
+        if (draftOrderIndex < draftOrder.size() - 1) {
+            draftOrderIndex++;
+            spTeam = draftOrder.get(draftOrderIndex);
         } else {
             spTeam = 0;
-            pointer = 0;
+            draftOrderIndex = 0;
         }
         changeBarColor();
     }
 
     void prevTeam() {
-        if (pointer > 0) {
-            pointer -= 1;
+        Log.d(TAG,"prevTeam");
+        if (draftOrderIndex > 0) {
+            draftOrderIndex -= 1;
         } else {
-            pointer = draftOrder.size() - 1;
+            draftOrderIndex = draftOrder.size() - 1;
         }
-        spTeam = draftOrder.get(pointer);
+        spTeam = draftOrder.get(draftOrderIndex);
         changeBarColor();
     }
 
 
     void changeBarColor() {
-        Log.d(TAG,"Team bum "+ spTeam);
+        Log.d(TAG,"changeBarColor");
         Window window = getWindow();
         window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
         switch(spTeam){
         case 0:
-            window.setStatusBarColor(getResources().getColor(R.color.darker_blue,null));
+            window.setStatusBarColor(getResources().getColor(R.color.darker_red,null));
             break;
         case 1:
-            window.setStatusBarColor(getResources().getColor(R.color.darker_red,null));
+            window.setStatusBarColor(getResources().getColor(R.color.darker_blue,null));
             break;
         case 2:
             window.setStatusBarColor(getResources().getColor(R.color.darker_green,null));
@@ -326,8 +384,9 @@ public class DraftActivity extends AppCompatActivity implements DraftRecyclerAda
     }
 
     int getPrevTeam(){
-        if(pointer > 0){
-            return draftOrder.get(pointer-1);
+        Log.d(TAG,"getPrevTeam");
+        if(draftOrderIndex > 0){
+            return draftOrder.get(draftOrderIndex -1);
         }
         else{
             return 0;
@@ -336,26 +395,19 @@ public class DraftActivity extends AppCompatActivity implements DraftRecyclerAda
 
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     public void confirmDraft(Fighter fighter) {
-
+        Log.d(TAG,"confirmDraft");
         final Fighter temp = fighter;
-
         //undo
         if(lastDrafted.size() != 0 && lastDrafted.get(lastDrafted.size()-1) == fighter){
             Parcelable recyclerViewState;
             recyclerViewState = Objects.requireNonNull(mRecyclerView.getLayoutManager()).onSaveInstanceState();
-
+            Fighter removedFighter = spDrafted.get(getPrevTeam()).get(spDrafted.get(getPrevTeam()).size()-1);
             spDrafted.get(getPrevTeam()).remove(spDrafted.get(getPrevTeam()).size()-1);
-            mRecyclerView.setAdapter(null);
-            mRecyclerView.setLayoutManager(null);
-            mRecyclerView.setAdapter(adapter);
-            mRecyclerView.setLayoutManager(new LinearLayoutManager(mContext));
-            adapter.notifyDataSetChanged();
+            adapter.notifyItemChanged(fighters.indexOf(removedFighter));
             mRecyclerView.getLayoutManager().onRestoreInstanceState(recyclerViewState);
             lastDrafted.remove(lastDrafted.size()-1);
             prevTeam();
-        }
-        else if(!lastDrafted.contains(fighter)){
-
+        }else if(notDrafted(fighter)){
             AlertDialog.Builder builder = new AlertDialog.Builder(DraftActivity.this);
             builder.setCancelable(true);
             builder.setIcon(fighter.getImageId());
@@ -374,12 +426,12 @@ public class DraftActivity extends AppCompatActivity implements DraftRecyclerAda
             Button rejectButton = alert.getButton(DialogInterface.BUTTON_NEGATIVE);
             switch (spTeam){
                 case 0:
-                    alert.getWindow().setBackgroundDrawableResource(R.color.darker_blue);
+                    alert.getWindow().setBackgroundDrawableResource(R.color.darker_red);
                     confirmButton.setTextColor(getResources().getColor(R.color.white,null));
                     rejectButton.setTextColor(getResources().getColor(R.color.white,null));
                     break;
                 case 1:
-                    alert.getWindow().setBackgroundDrawableResource(R.color.darker_red);
+                    alert.getWindow().setBackgroundDrawableResource(R.color.darker_blue);
                     confirmButton.setTextColor(getResources().getColor(R.color.white,null));
                     rejectButton.setTextColor(getResources().getColor(R.color.white,null));
                     break;
@@ -398,26 +450,45 @@ public class DraftActivity extends AppCompatActivity implements DraftRecyclerAda
         }
     }
 
+    private boolean notDrafted(Fighter someFighter) {
+        for(int i = 0; i < NUMTEAMS; i++){
+            for(Fighter fighter:lastDrafted){
+                if(someFighter.getName().equals(fighter.getName())){
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     void draftCharacter(Fighter fighter) {
         Log.d(TAG,"draftCharacter "+fighter.getName());
+        Log.d(TAG,"draftOrder: "+draftOrder.toString()+" draftOrderIndex:"+ draftOrderIndex);
         hideKeyboard(this);
         lastDrafted.add(fighter);
 
         spDrafted.get(spTeam).add(fighter);
-        updateVisibilityOfDrafted(fighter);
-        nextTeam();
+        if(!eye){
+            adapter.notifyItemRemoved(fighters.indexOf(fighter));
+            fighters.remove(fighter);
+        }
         if(eye)
-            adapter.notifyDataSetChanged();
+            adapter.notifyItemChanged(fighters.indexOf(fighter));
+        nextTeam();
 
         Log.d(TAG,spDrafted+" "+DRAFTINGNUM);
         //if all teams are the right length go to gameplay
         boolean flag = true;
-        for(int i = 0; i < spDrafted.size(); i++){
-            if(spDrafted.get(i).size() < DRAFTINGNUM){
-                Log.d(TAG,"Team "+i);
-                flag = false;
-                break;
+        if(GAMEMODE.equals("Draft As You Go")){
+            flag = lastDrafted.size()-indexOfRecentRandom-1 == draftOrder.size();
+        }else {
+            for (int i = 0; i < spDrafted.size(); i++) {
+                if (spDrafted.get(i).size() < DRAFTINGNUM) {
+                    Log.d(TAG, "Team " + i);
+                    flag = false;
+                    break;
+                }
             }
         }
         if(flag){
@@ -425,16 +496,8 @@ public class DraftActivity extends AppCompatActivity implements DraftRecyclerAda
         }
     }
 
-    private void updateVisibilityOfDrafted(Fighter fighter) {
-        if(!eye){
-            fighters.remove(fighter);
-            adapter.notifyItemRemoved(fighter.getPosition());
-        }
-        resetPositions();
-
-    }
-
     Fighter getFighter(String name) {
+        Log.d(TAG,"getFighter "+name);
         for(Fighter someFighter:fighters){
             if(someFighter.getName().equals(name)) {
                 return someFighter;
@@ -446,214 +509,121 @@ public class DraftActivity extends AppCompatActivity implements DraftRecyclerAda
     private void goToGameplay() {
         Log.d(TAG,"Going to Gameplay");
 
-        ArrayList<Fighter> toSend = new ArrayList<>(fullFighters);
-
-        Intent intent = new Intent(this, GamePlayActivity.class);
-        Bundle bundle = new Bundle();
+        ArrayList<Fighter> remainders = ((ManagingApplication) getApplicationContext()).remainders;
+        if(remainders == null) {
+            remainders = new ArrayList<>(fighters);
+        }
 
         switch(NUMTEAMS){
             case 4:
-                toSend.removeAll(spDrafted.get(3));
-                bundle.putSerializable("t3", spDrafted.get(3));
-                Log.d(TAG,"Team 3: "+spDrafted.get(3));
+                remainders.removeAll(spDrafted.get(3));
             case 3:
-                toSend.removeAll(spDrafted.get(2));
-                bundle.putSerializable("t2", spDrafted.get(2));
-                Log.d(TAG,"Team 2: "+spDrafted.get(2));
+                remainders.removeAll(spDrafted.get(2));
             case 2:
-                toSend.removeAll(spDrafted.get(0));
-                toSend.removeAll(spDrafted.get(1));
-                bundle.putSerializable("t0", spDrafted.get(0));
-                Log.d(TAG,"Team 0: "+spDrafted.get(0));
-                bundle.putSerializable("t1", spDrafted.get(1));
-                Log.d(TAG,"Team 1: "+spDrafted.get(1));
-
+                remainders.removeAll(spDrafted.get(0));
+                remainders.removeAll(spDrafted.get(1));
         }
 
-        bundle.putSerializable("remainders", toSend);
-        intent.putExtras(bundle);
-
-        startActivity(intent);
-    }
-
-    private void initImageBitmaps(){
-        Log.d(TAG,"initImageBitmaps: preparing bitmaps.");
-        fighters.add(new Fighter( R.drawable.img_01_mario,"Mario"));
-
-        fighters.add(new Fighter( R.drawable.img_02_dk,"Donkey Kong"));
-
-        fighters.add(new Fighter( R.drawable.img_03_link,"Link"));
-
-        fighters.add(new Fighter( R.drawable.img_04_samus,"Samus"));
-
-        fighters.add(new Fighter( R.drawable.img_05_dark_samus,"Dark Samus"));
-
-        fighters.add(new Fighter( R.drawable.img_06_yoshi,"Yoshi"));
-
-        fighters.add(new Fighter( R.drawable.img_07_kirby,"Kirby"));
-
-        fighters.add(new Fighter( R.drawable.img_08_fox,"Fox"));
-
-        fighters.add(new Fighter( R.drawable.img_09_pikachu,"Pikachu"));
-
-        fighters.add(new Fighter( R.drawable.img_10_luigi,"Luigi"));
-
-        fighters.add(new Fighter( R.drawable.img_11_ness,"Ness"));
-
-        fighters.add(new Fighter( R.drawable.img_12_captain,"Captain Falcon"));
-
-        fighters.add(new Fighter( R.drawable.img_13_jiggly,"Jigglypuff"));
-
-        fighters.add(new Fighter( R.drawable.img_14_peach,"Peach"));
-
-        fighters.add(new Fighter( R.drawable.img_15_daisy,"Daisy"));
-
-        fighters.add(new Fighter( R.drawable.img_16_bowser,"Bowser"));
-
-        fighters.add(new Fighter( R.drawable.img_17_ice,"Ice Climbers"));
-
-        fighters.add(new Fighter( R.drawable.img_18_sheik,"Sheik"));
-
-        fighters.add(new Fighter( R.drawable.img_19_zelda,"Zelda"));
-
-        fighters.add(new Fighter( R.drawable.img_20_dr,"Dr. Mario"));
-
-        fighters.add(new Fighter( R.drawable.img_21_pichu,"Pichu"));
-
-        fighters.add(new Fighter( R.drawable.img_22_falco,"Falco"));
-
-        fighters.add(new Fighter( R.drawable.img_23_marth,"Marth"));
-
-        fighters.add(new Fighter( R.drawable.img_24_lucina,"Lucina"));
-
-        fighters.add(new Fighter( R.drawable.img_25_young,"Young Link"));
-
-        fighters.add(new Fighter( R.drawable.img_26_zero,"Zero Suit Samus"));
-
-        fighters.add(new Fighter( R.drawable.img_27_ganon,"Ganondorf"));
-
-        fighters.add(new Fighter( R.drawable.img_28_snake,"Snake"));
-
-        fighters.add(new Fighter( R.drawable.img_29_mewtwo,"Mewtwo"));
-
-        fighters.add(new Fighter( R.drawable.img_30_roy,"Roy"));
-
-        fighters.add(new Fighter( R.drawable.img_31_chrom,"Chrom"));
-
-        fighters.add(new Fighter( R.drawable.img_32_game,"Game and Watch"));
-
-        fighters.add(new Fighter( R.drawable.img_33_meta,"Metaknight"));
-
-        fighters.add(new Fighter( R.drawable.img_34_pit,"Pit"));
-
-        fighters.add(new Fighter( R.drawable.img_35_dark_pit,"Dark Pit"));
-
-        fighters.add(new Fighter( R.drawable.img_36_wario,"Wario"));
-
-        fighters.add(new Fighter( R.drawable.img_37_ike,"Ike"));
-
-        fighters.add(new Fighter( R.drawable.img_38_trainer,"Pokemon Trainer"));
-
-        fighters.add(new Fighter( R.drawable.img_39_diddy,"Diddy Kong"));
-
-        fighters.add(new Fighter( R.drawable.img_40_lucas,"Lucas"));
-
-        fighters.add(new Fighter( R.drawable.img_41_sonic,"Sonic"));
-
-        fighters.add(new Fighter( R.drawable.img_42_king,"King Dedede"));
-
-        fighters.add(new Fighter( R.drawable.img_43_olimar,"Olimar"));
-
-        fighters.add(new Fighter( R.drawable.img_44_lucario,"Lucario"));
-
-        fighters.add(new Fighter( R.drawable.img_45_rob,"R.O.B."));
-
-        fighters.add(new Fighter( R.drawable.img_46_toon,"Toon Link"));
-
-        fighters.add(new Fighter( R.drawable.img_47_wolf,"Wolf"));
-
-        fighters.add(new Fighter( R.drawable.img_48_villager,"Villager"));
-
-        fighters.add(new Fighter( R.drawable.img_49_mega,"Megaman"));
-
-        fighters.add(new Fighter( R.drawable.img_50_wii,"Wii Fit Trainer"));
-
-        fighters.add(new Fighter( R.drawable.img_51_rosalina,"Rosalina"));
-
-        fighters.add(new Fighter( R.drawable.img_52_mac,"Little Mac"));
-
-        fighters.add(new Fighter( R.drawable.img_53_greninja,"Greninja"));
-
-        fighters.add(new Fighter( R.drawable.img_54_palutena,"Palutena"));
-
-        fighters.add(new Fighter( R.drawable.img_55_pacman,"Pacman"));
-
-        fighters.add(new Fighter( R.drawable.img_56_robin,"Robin"));
-
-        fighters.add(new Fighter( R.drawable.img_57_shulk,"Shulk"));
-
-        fighters.add(new Fighter( R.drawable.img_58_bowserjr,"Bowser Jr"));
-
-        fighters.add(new Fighter( R.drawable.img_59_duck,"Duck Hunt"));
-
-        fighters.add(new Fighter( R.drawable.img_60_ryu,"Ryu"));
-
-        fighters.add(new Fighter( R.drawable.img_61_ken,"Ken"));
-
-        fighters.add(new Fighter( R.drawable.img_62_cloud,"Cloud"));
-
-        fighters.add(new Fighter( R.drawable.img_63_corrin,"Corrin"));
-
-        fighters.add(new Fighter( R.drawable.img_64_bayonetta,"Bayonetta"));
-
-        fighters.add(new Fighter( R.drawable.img_65_ink,"Inkling"));
-
-        fighters.add(new Fighter( R.drawable.img_66_ridley,"Ridley"));
-
-        fighters.add(new Fighter( R.drawable.img_67_simon,"Simon"));
-
-        fighters.add(new Fighter( R.drawable.img_68_richter,"Richter"));
-
-        fighters.add(new Fighter( R.drawable.img_69_rool,"King K. Rool"));
-
-        fighters.add(new Fighter( R.drawable.img_70_isabelle,"Isabelle"));
-
-        fighters.add(new Fighter( R.drawable.img_71_incin,"Incineroar"));
-
-        fighters.add(new Fighter( R.drawable.img_72_flower,"Piranha Plant"));
-
-        fighters.add(new Fighter( R.drawable.img_73_joker,"Joker"));
-
-        fighters.add(new Fighter( R.drawable.img_74_hero,"Hero"));
-
-        fighters.add(new Fighter( R.drawable.img_75_banjo,"Banjo & Kazooie"));
-
-        fighters.add(new Fighter( R.drawable.img_76_terry,"Terry"));
-
-        fighters.add(new Fighter( R.drawable.img_77_byleth,"Byleth"));
-
-        fighters.add(new Fighter( R.drawable.img_78_minmin,"Min Min"));
-
-        fighters.add(new Fighter( R.drawable.img_79_steve,"Steve"));
-
-        fighters.add(new Fighter( R.drawable.img_80_sephiroth,"Sephiroth"));
-
-        fighters.add(new Fighter( R.drawable.img_81_pyra,"Pyra and Mythra"));
-
-        fighters.add(new Fighter( R.drawable.img_82_kazuya,"Kazuya"));
-
-    }
-
-    private void resetPositions() {
-        for(int i = 0; i < fighters.size(); i++){
-            fighters.get(i).setPosition(i);
+        if(PREVACTIVITY.equals("MainActivity")) {
+            Intent intent = new Intent(this, GamePlayActivity.class);
+            startActivity(intent);
+        }
+        else{
+            onBackPressed();
         }
     }
 
-    private void resetPositions(ArrayList<Fighter> AList) {
-        for(int i = 0; i < AList.size(); i++){
-            AList.get(i).setPosition(i);
+
+    private void initFighters(){
+        if(((ManagingApplication) getApplicationContext()).allFighters == null) {
+            ((ManagingApplication) getApplicationContext()).allFighters = new ArrayList<>();
+            ArrayList<Fighter> allFighters = ((ManagingApplication) getApplicationContext()).allFighters;
+
+            allFighters.add(new Fighter(R.drawable.img_01_mario, "Mario"));
+            allFighters.add(new Fighter(R.drawable.img_02_dk, "Donkey Kong"));
+            allFighters.add(new Fighter(R.drawable.img_03_link, "Link"));
+            allFighters.add(new Fighter(R.drawable.img_04_samus, "Samus"));
+            allFighters.add(new Fighter(R.drawable.img_05_dark_samus, "Dark Samus"));
+            allFighters.add(new Fighter(R.drawable.img_06_yoshi, "Yoshi"));
+            allFighters.add(new Fighter(R.drawable.img_07_kirby, "Kirby"));
+            allFighters.add(new Fighter(R.drawable.img_08_fox, "Fox"));
+            allFighters.add(new Fighter(R.drawable.img_09_pikachu, "Pikachu"));
+            allFighters.add(new Fighter(R.drawable.img_10_luigi, "Luigi"));
+            allFighters.add(new Fighter(R.drawable.img_11_ness, "Ness"));
+            allFighters.add(new Fighter(R.drawable.img_12_captain, "Captain Falcon"));
+            allFighters.add(new Fighter(R.drawable.img_13_jiggly, "Jigglypuff"));
+            allFighters.add(new Fighter(R.drawable.img_14_peach, "Peach"));
+            allFighters.add(new Fighter(R.drawable.img_15_daisy, "Daisy"));
+            allFighters.add(new Fighter(R.drawable.img_16_bowser, "Bowser"));
+            allFighters.add(new Fighter(R.drawable.img_17_ice, "Ice Climbers"));
+            allFighters.add(new Fighter(R.drawable.img_18_sheik, "Sheik"));
+            allFighters.add(new Fighter(R.drawable.img_19_zelda, "Zelda"));
+            allFighters.add(new Fighter(R.drawable.img_20_dr, "Dr. Mario"));
+            allFighters.add(new Fighter(R.drawable.img_21_pichu, "Pichu"));
+            allFighters.add(new Fighter(R.drawable.img_22_falco, "Falco"));
+            allFighters.add(new Fighter(R.drawable.img_23_marth, "Marth"));
+            allFighters.add(new Fighter(R.drawable.img_24_lucina, "Lucina"));
+            allFighters.add(new Fighter(R.drawable.img_25_young, "Young Link"));
+            allFighters.add(new Fighter(R.drawable.img_26_ganon, "Ganondorf"));
+            allFighters.add(new Fighter(R.drawable.img_27_mewtwo, "Mewtwo"));
+            allFighters.add(new Fighter(R.drawable.img_28_roy, "Roy"));
+            allFighters.add(new Fighter(R.drawable.img_29_chrom, "Chrom"));
+            allFighters.add(new Fighter(R.drawable.img_30_game, "Game and Watch"));
+            allFighters.add(new Fighter(R.drawable.img_31_meta, "Metaknight"));
+            allFighters.add(new Fighter(R.drawable.img_32_pit, "Pit"));
+            allFighters.add(new Fighter(R.drawable.img_33_dark_pit, "Dark Pit"));
+            allFighters.add(new Fighter(R.drawable.img_34_zero, "Zero Suit Samus"));
+            allFighters.add(new Fighter(R.drawable.img_35_wario, "Wario"));
+            allFighters.add(new Fighter(R.drawable.img_36_snake, "Snake"));
+            allFighters.add(new Fighter(R.drawable.img_37_ike, "Ike"));
+            allFighters.add(new Fighter(R.drawable.img_38_trainer, "Pokemon Trainer"));
+            allFighters.add(new Fighter(R.drawable.img_39_diddy, "Diddy Kong"));
+            allFighters.add(new Fighter(R.drawable.img_40_lucas, "Lucas"));
+            allFighters.add(new Fighter(R.drawable.img_41_sonic, "Sonic"));
+            allFighters.add(new Fighter(R.drawable.img_42_king, "King Dedede"));
+            allFighters.add(new Fighter(R.drawable.img_43_olimar, "Olimar"));
+            allFighters.add(new Fighter(R.drawable.img_44_lucario, "Lucario"));
+            allFighters.add(new Fighter(R.drawable.img_45_rob, "R.O.B."));
+            allFighters.add(new Fighter(R.drawable.img_46_toon, "Toon Link"));
+            allFighters.add(new Fighter(R.drawable.img_47_wolf, "Wolf"));
+            allFighters.add(new Fighter(R.drawable.img_48_villager, "Villager"));
+            allFighters.add(new Fighter(R.drawable.img_49_mega, "Megaman"));
+            allFighters.add(new Fighter(R.drawable.img_50_wii, "Wii Fit Trainer"));
+            allFighters.add(new Fighter(R.drawable.img_51_rosalina, "Rosalina"));
+            allFighters.add(new Fighter(R.drawable.img_52_mac, "Little Mac"));
+            allFighters.add(new Fighter(R.drawable.img_53_greninja, "Greninja"));
+            allFighters.add(new Fighter(R.drawable.img_54_palutena, "Palutena"));
+            allFighters.add(new Fighter(R.drawable.img_55_pacman, "Pacman"));
+            allFighters.add(new Fighter(R.drawable.img_56_robin, "Robin"));
+            allFighters.add(new Fighter(R.drawable.img_57_shulk, "Shulk"));
+            allFighters.add(new Fighter(R.drawable.img_58_bowserjr, "Bowser J"));
+            allFighters.add(new Fighter(R.drawable.img_59_duck, "Duck Hunt"));
+            allFighters.add(new Fighter(R.drawable.img_60_ryu, "Ryu"));
+            allFighters.add(new Fighter(R.drawable.img_61_ken, "Ken"));
+            allFighters.add(new Fighter(R.drawable.img_62_cloud, "Cloud"));
+            allFighters.add(new Fighter(R.drawable.img_63_corrin, "Corrin"));
+            allFighters.add(new Fighter(R.drawable.img_64_bayonetta, "Bayonetta"));
+            allFighters.add(new Fighter(R.drawable.img_65_ink, "Inkling"));
+            allFighters.add(new Fighter(R.drawable.img_66_ridley, "Ridley"));
+            allFighters.add(new Fighter(R.drawable.img_67_simon, "Simon"));
+            allFighters.add(new Fighter(R.drawable.img_68_richter, "Richter"));
+            allFighters.add(new Fighter(R.drawable.img_69_rool, "King K. Rool"));
+            allFighters.add(new Fighter(R.drawable.img_70_isabelle, "Isabelle"));
+            allFighters.add(new Fighter(R.drawable.img_71_incin, "Incineroar"));
+            allFighters.add(new Fighter(R.drawable.img_72_flower, "Piranha Plant"));
+            allFighters.add(new Fighter(R.drawable.img_73_joker, "Joker"));
+            allFighters.add(new Fighter(R.drawable.img_74_hero, "Hero"));
+            allFighters.add(new Fighter(R.drawable.img_75_banjo, "Banjo & Kazooie"));
+            allFighters.add(new Fighter(R.drawable.img_76_terry, "Terry"));
+            allFighters.add(new Fighter(R.drawable.img_77_byleth, "Byleth"));
+            allFighters.add(new Fighter(R.drawable.img_78_minmin, "Min Min"));
+            allFighters.add(new Fighter(R.drawable.img_79_steve, "Steve"));
+            allFighters.add(new Fighter(R.drawable.img_80_sephiroth, "Sephiroth"));
+            allFighters.add(new Fighter(R.drawable.img_81_pyra, "Pyra and Mythra"));
+            allFighters.add(new Fighter(R.drawable.img_82_kazuya, "Kazuya"));
         }
+        else fighters.clear();
+        fighters.addAll(((ManagingApplication) getApplicationContext()).allFighters);
     }
 
     private void initRecyclerView(){
@@ -670,6 +640,7 @@ public class DraftActivity extends AppCompatActivity implements DraftRecyclerAda
         editText = findViewById(R.id.autoCompleteTextView);
         AutoCompleteCharacterAdapter autoAdapter = new AutoCompleteCharacterAdapter(this, autoCompleteFighters);
         editText.setAdapter(autoAdapter);
+        adapter.notifyDataSetChanged();
     }
 
     public static void hideKeyboard(Activity activity) {
@@ -685,11 +656,12 @@ public class DraftActivity extends AppCompatActivity implements DraftRecyclerAda
 
     @Override
     public void onBackPressed(){
-        if(lastDrafted.size() > 0){
+        if(lastDrafted.size() > 0 && PREVACTIVITY.equals("MainActivity")){
             Log.d(TAG,"Undoing "+lastDrafted.get(lastDrafted.size()-1));
             confirmDraft(lastDrafted.get(lastDrafted.size()-1));
         }
         else{
+            Log.d(TAG,"Back to GamePlay?");
             super.onBackPressed();
         }
     }

@@ -7,7 +7,6 @@ import java.io.Serializable;
 public class Fighter  implements Serializable, Comparable<Fighter> {
     private final int imageId;
     private final String name;
-    private int position;
 
     Fighter(int image, String name){
         this.imageId = image;
@@ -22,23 +21,8 @@ public class Fighter  implements Serializable, Comparable<Fighter> {
         return name;
     }
 
-    public int getPosition() {
-        return position;
-    }
-
-    public void setPosition(int position) {
-        this.position = position;
-    }
-
     @Override
     public int compareTo(Fighter ch) {
         return this.getName().compareTo(ch.getName());
     }
-
-    @Override
-    @NonNull
-    public String toString(){
-        return this.name;
-    }
-
 }

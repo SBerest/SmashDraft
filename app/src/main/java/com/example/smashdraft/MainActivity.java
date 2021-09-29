@@ -29,6 +29,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if (clickedId == R.id.join_button) {
             Log.d(TAG, "Join Clicked");
             Intent intent = new Intent(this, DraftActivity.class);
+            intent.putExtra("prevActivity","MainActivity");
             startActivity(intent);
         }
         else if(clickedId == R.id.settings_button){

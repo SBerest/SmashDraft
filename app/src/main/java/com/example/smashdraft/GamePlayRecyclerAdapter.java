@@ -5,7 +5,6 @@ import android.content.Context;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -74,7 +73,6 @@ public class GamePlayRecyclerAdapter extends RecyclerView.Adapter<GamePlayRecycl
     @Override
     public void onBindViewHolder(@NonNull GamePlayViewHolder holder, int position) {
         Team activeFighters = mTeams.get(position);
-
 
         if (activeFighters.getTeamSize() == 1){
             holder.mImageView0.setImageResource(activeFighters.getImageId(0));

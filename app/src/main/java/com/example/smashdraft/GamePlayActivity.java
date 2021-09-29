@@ -21,41 +21,34 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 
 public class GamePlayActivity extends AppCompatActivity implements View.OnClickListener, GamePlayRecyclerAdapter.onTeamListener{
 
     private static final String TAG = "GamePlayActivity";
+    private static String GAMEMODE;
     private static int NUMTEAMS;
-    private static int NUMT0;
-    private static int NUMT1;
-    private static int NUMT2;
-    private static int NUMT3;
     private static int NUMWINS;
-    private static int NUMSKIPS;
-    private static boolean RANDOMATEND;
-    private static int NUMRANDOM;
-    private static int NUMLOSSES = 4; //TODO Add this as a setting?
+    private static boolean SKIPANYTIME;
 
     private Button skip_button = null;
     private Button win_button = null;
     private TextView win_counter = null;
-    private ImageView loss_counter = null;///
-
+    private ImageView loss_counter = null;
+    private ImageView skip0 = null;
+    private ImageView skip1 = null;
+    private ImageView skip2 = null;
+    private ArrayList<Integer> draftOrder = new ArrayList<>();;
     boolean skipOn;
 
-    private int focusTeam = 0;
+    private Team focusTeam;
 
     GamePlayRecyclerAdapter adapter;
     RecyclerView recyclerView;
-    ArrayList<Fighter> t0;
-    ArrayList<Fighter> t1;
-    ArrayList<Fighter> t2;
-    ArrayList<Fighter> t3;
     ArrayList<Fighter> remainder;
     ArrayList<Team> teams = new ArrayList<>();
 
-    //TODO implement number of skips
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.d(TAG,"GamePlay Create");
@@ -63,27 +56,50 @@ public class GamePlayActivity extends AppCompatActivity implements View.OnClickL
         setContentView(R.layout.activity_gameplay);
 
         SharedPreferences sharedPreferences = this.getSharedPreferences("settings", Context.MODE_PRIVATE);
+        GAMEMODE = sharedPreferences.getString("gameMode","Draft As You Go");
         NUMTEAMS = sharedPreferences.getInt("numTeams",4);
-        Log.d(TAG,"numTeams = "+NUMTEAMS);
-        NUMT0 = sharedPreferences.getInt("numRed",2);
-        Log.d(TAG,"numRed = "+NUMT0);
-        NUMT1 = sharedPreferences.getInt("numBlue",2);
-        Log.d(TAG,"numBlue = "+NUMT1);
-        NUMT2 = sharedPreferences.getInt("numGreen",2);
-        Log.d(TAG,"numGreen = "+NUMT2);
-        NUMT3 = sharedPreferences.getInt("numYellow",2);
-        Log.d(TAG,"numYellow = "+NUMT3);
-        NUMWINS = sharedPreferences.getInt("numCharacters",8) + sharedPreferences.getInt("numRandoms",2);
-        Log.d(TAG,"numCharacters + numRandoms = Num Wins"+sharedPreferences.getInt("numCharacters",8)+"+"+sharedPreferences.getInt("numRandoms",2)+"="+NUMWINS);
-        NUMSKIPS = sharedPreferences.getInt("numSkip",0);
-        Log.d(TAG,"numSkips = "+NUMSKIPS);
-        skipOn = NUMSKIPS != 0;
 
-        RANDOMATEND = sharedPreferences.getBoolean("randomEnd",true);
-        Log.d(TAG,"randomAtEnd = "+RANDOMATEND);
-        NUMRANDOM = sharedPreferences.getInt("numRandoms",2);
-        Log.d(TAG,"numRandoms = "+NUMRANDOM);
-        if(skipOn) skip_button = findViewById(R.id.skip_button);
+        //Can't have drop through because I want active fighters in the correct order
+        switch(NUMTEAMS){
+            case 4:
+                teams.add(((ManagingApplication) getApplicationContext()).team3);
+            case 3:
+                teams.add(0,((ManagingApplication) getApplicationContext()).team2);
+            case 2:
+                teams.add(0,((ManagingApplication) getApplicationContext()).team0);
+                teams.add(1,((ManagingApplication) getApplicationContext()).team1);
+                break;
+        }
+        focusTeam = teams.get(0);
+
+        int NUMCHARS = sharedPreferences.getInt("numCharacters", 8);
+
+        NUMWINS = sharedPreferences.getInt("numCharacters",8) + sharedPreferences.getInt("numRandoms",2);
+        if(GAMEMODE.equals("Columns")){
+            NUMWINS = NUMCHARS /4;
+        }
+        int NUMSKIPS = sharedPreferences.getInt("numSkips", 0);
+        skipOn = NUMSKIPS != 0;
+        SKIPANYTIME = sharedPreferences.getBoolean("skipAnyTime",false);
+
+        if(skipOn) {
+            skip_button = findViewById(R.id.skip_button);
+            skip_button.setVisibility(View.VISIBLE);
+        }
+
+        skip0 = findViewById(R.id.skip0);
+        skip1 = findViewById(R.id.skip1);
+        skip2 = findViewById(R.id.skip2);
+        switch (NUMSKIPS){
+            case 2:
+                skip2.setVisibility(View.GONE);
+            case 1:
+                skip1.setVisibility(View.GONE);
+            case 0:
+                skip0.setVisibility(View.GONE);
+        }
+        Log.d(TAG,"Visibilities "+ skip0.getVisibility() +":"+skip1.getVisibility()+":"+skip2.getVisibility());
+
         win_button = findViewById(R.id.win_button);
 
         win_counter = findViewById(R.id.number_of_wins);
@@ -92,31 +108,7 @@ public class GamePlayActivity extends AppCompatActivity implements View.OnClickL
         if(skipOn) skip_button.setOnClickListener(this);
         win_button.setOnClickListener(this);
 
-        Intent intent = this.getIntent();
-        Bundle bundle = intent.getExtras();
-
-        assert bundle != null;
-        this.remainder = (ArrayList<Fighter>) bundle.getSerializable("remainders");
-
-        this.t0 = (ArrayList<Fighter>) bundle.getSerializable("t0");
-        this.t1 = (ArrayList<Fighter>) bundle.getSerializable("t1");
-        this.t2 = (ArrayList<Fighter>) bundle.getSerializable("t2");
-        this.t3 = (ArrayList<Fighter>) bundle.getSerializable("t3");
-        //Can't have drop through because I want active fighters in the correct order
-        switch(NUMTEAMS){
-            case 4:
-                teams.add(new Team(t3, 3, NUMT3, NUMRANDOM, RANDOMATEND));
-                Log.d(TAG, t3.toString());
-            case 3:
-                teams.add(0, new Team(t2, 2, NUMT2, NUMRANDOM, RANDOMATEND));
-                Log.d(TAG, t2.toString());
-            case 2:
-                teams.add(0,new Team(t0, 0, NUMT0, NUMRANDOM, RANDOMATEND));
-                teams.add(1,new Team(t1,1, NUMT1, NUMRANDOM, RANDOMATEND));
-                Log.d(TAG, t0.toString());
-                Log.d(TAG, t1.toString());
-                break;
-        }
+        this.remainder = ((ManagingApplication) getApplicationContext()).remainders;
 
         recyclerView = findViewById(R.id.gameplay_draft_list);
         adapter = new GamePlayRecyclerAdapter(this, teams, this);
@@ -124,44 +116,48 @@ public class GamePlayActivity extends AppCompatActivity implements View.OnClickL
         recyclerView.setAdapter(adapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
+        updateSkipImages();
         updateLoseImage();
     }
 
     //TODO Undo function? with confirmation?
     @Override
-    public void onBackPressed(){
-
-    }
+    public void onBackPressed(){}
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @Override
     public void onClick(View v) {
+        draftOrder.clear();
         if(v.getId() == R.id.win_button){
-                Log.d(TAG,focusTeam+" Win Button");
-                for(int i = 0; i < NUMTEAMS; i++) {
-                    if (i != focusTeam) {
-                        if (notFirst(i)) {
-                            teams.get(i).incLoss();
-                            if (teams.get(i).getLosses() >= NUMLOSSES) {
-                                teams.get(i).setLosses(0);
-                                teams.get(i).incWin();
-                                updateWins(i);
-                            }
-                        }
+            for(int i = 0; i < NUMTEAMS; i++) {
+                if(teams.get(i) != focusTeam && notFirst(teams.get(i))) {
+                    teams.get(i).incLoss();
+                    int NUMLOSSES = 4;
+                    if (teams.get(i).getLosses() >= NUMLOSSES) {
+                        teams.get(i).setLosses(0);
+                        teams.get(i).incWin();
+                        updateWins(teams.get(i));
                     }
                 }
-
-                teams.get(focusTeam).setLosses(0);
-                teams.get(focusTeam).incWin();
+            }
+            focusTeam.setLosses(0);
+            focusTeam.incWin();
+            updateWins(focusTeam);
+            reorder();
+        }else if(v.getId() == R.id.skip_button){
+            if(SKIPANYTIME || focusTeam.getLosses() > 0){
+                focusTeam.skip();
                 updateWins(focusTeam);
                 reorder();
             }
+        }
+        updateSkipImages();
         updateLoseImage();
     }
 
-    private boolean notFirst(int team) {
+    private boolean notFirst(Team team) {
         for(int i = 0; i < NUMTEAMS; i++){
-            if(teams.get(team).getWins() < teams.get(i).getWins()){
+            if(team.getWins() < teams.get(i).getWins()){
                 return true;
             }
         }
@@ -169,23 +165,19 @@ public class GamePlayActivity extends AppCompatActivity implements View.OnClickL
     }
 
     private void reorder() {
-        int team = teams.get(focusTeam).getTeam();
-        ArrayList<Team> newFighters = new ArrayList<>(teams);
-        Collections.sort(newFighters);
-        int[] pos = compareArraylists(teams,newFighters);
+        int team = focusTeam.getTeam();
+        ArrayList<Team> newTeams = new ArrayList<>(teams);
+        Collections.sort(newTeams);
+        int[] pos = compareArraylists(teams, newTeams);
         teams.clear();
-        teams.addAll(newFighters);
-        Log.d(TAG,teams+"");
+        teams.addAll(newTeams);
 
         if(pos != null) {
             adapter.notifyItemMoved(pos[0], pos[1]);
         }
-        else{
-            Log.d(TAG,"No Changes");
-        }
         for(int i = 0; i < NUMTEAMS; i++){
             if(teams.get(i).getTeam() == team){
-                focusTeam = i;
+                focusTeam = teams.get(i);
             }
         }
     }
@@ -195,9 +187,9 @@ public class GamePlayActivity extends AppCompatActivity implements View.OnClickL
         //Iterate till there is a difference
         int to_pos = 0;
 
-        while(before.get(to_pos).getName(0).equals(after.get(to_pos).getName(0))){
+        while(before.get(to_pos).getTeam() == (after.get(to_pos).getTeam())){
             to_pos++;
-            if(to_pos == NUMTEAMS){
+            if(to_pos == before.size() - 1 || to_pos == after.size() - 1){
                 return null;
             }
         }
@@ -205,7 +197,7 @@ public class GamePlayActivity extends AppCompatActivity implements View.OnClickL
         int from_pos = to_pos;
 
         //Now find where this new item comes from
-        while(!before.get(from_pos).getName(0).equals(to_find.getName(0))){
+        while(before.get(from_pos).getTeam() != (to_find.getTeam())){
             from_pos++;
             if(from_pos >= before.size()){
                 return null;
@@ -215,60 +207,126 @@ public class GamePlayActivity extends AppCompatActivity implements View.OnClickL
         return new int[] {from_pos,to_pos};
     }
 
-    private void updateLoseImage(){
-        if(focusTeam != -1) {
-            this.win_counter.setText(Integer.toString(teams.get(focusTeam).getWins()));
-            Log.d(TAG,"UpdateLoseImage, getLosses = "+teams.get(focusTeam).getLosses());
-            switch (teams.get(focusTeam).getLosses()) {
-                case 0:
-                    this.loss_counter.setImageResource(R.drawable.lose_0);
-                    this.loss_counter.setColorFilter(0xffff0000, PorterDuff.Mode.MULTIPLY );
-                    break;
-                case 1:
-                    this.loss_counter.setImageResource(R.drawable.lose_1);
-                    this.loss_counter.setColorFilter( R.color.blue, PorterDuff.Mode.MULTIPLY );
-                    break;
-                case 2:
-                    this.loss_counter.setImageResource(R.drawable.lose_2);
-                    this.loss_counter.setColorFilter( R.color.green, PorterDuff.Mode.MULTIPLY );
-                    break;
-                case 3:
-                    this.loss_counter.setImageResource(R.drawable.lose_3);
-                    this.loss_counter.setColorFilter( R.color.yellow, PorterDuff.Mode.MULTIPLY );
-                    break;
-            }
-
+    private void updateSkipImages(){
+        Log.d(TAG,"Team: "+focusTeam.getTeam() +" has "+focusTeam.getSkips()+" skips left.");
+        switch (focusTeam.getSkips()){
+            case 0:
+                if(skip0.getVisibility() != View.GONE) skip0.setVisibility(View.INVISIBLE);
+                if(skip1.getVisibility() != View.GONE) skip1.setVisibility(View.INVISIBLE);
+                if(skip2.getVisibility() != View.GONE) skip2.setVisibility(View.INVISIBLE);
+                break;
+            case 1:
+                skip0.setVisibility(View.VISIBLE);
+                if(skip1.getVisibility() != View.GONE) skip1.setVisibility(View.INVISIBLE);
+                if(skip2.getVisibility() != View.GONE) skip2.setVisibility(View.INVISIBLE);
+                break;
+            case 2:
+                skip0.setVisibility(View.VISIBLE);
+                skip1.setVisibility(View.VISIBLE);
+                if(skip2.getVisibility() != View.GONE) skip2.setVisibility(View.INVISIBLE);
+                break;
+            case 3:
+                skip0.setVisibility(View.VISIBLE);
+                skip1.setVisibility(View.VISIBLE);
+                skip2.setVisibility(View.VISIBLE);
+                break;
+        }
+        switch (focusTeam.getTeam()){
+            case 0:
+                if(skip0.getVisibility() != View.GONE) skip0.setColorFilter(0xffff0000, PorterDuff.Mode.MULTIPLY );
+                if(skip1.getVisibility() != View.GONE) skip1.setColorFilter(0xffff0000, PorterDuff.Mode.MULTIPLY );
+                if(skip2.getVisibility() != View.GONE) skip2.setColorFilter(0xffff0000, PorterDuff.Mode.MULTIPLY );
+                break;
+            case 1:
+                if(skip0.getVisibility() != View.GONE) skip0.setColorFilter( 0xff0000ff, PorterDuff.Mode.MULTIPLY );
+                if(skip1.getVisibility() != View.GONE) skip1.setColorFilter( 0xff0000ff, PorterDuff.Mode.MULTIPLY );
+                if(skip2.getVisibility() != View.GONE) skip2.setColorFilter( 0xff0000ff, PorterDuff.Mode.MULTIPLY );
+                break;
+            case 2:
+                if(skip0.getVisibility() != View.GONE) skip0.setColorFilter( 0xff00ff00, PorterDuff.Mode.MULTIPLY );
+                if(skip1.getVisibility() != View.GONE) skip1.setColorFilter( 0xff00ff00, PorterDuff.Mode.MULTIPLY );
+                if(skip2.getVisibility() != View.GONE) skip2.setColorFilter( 0xff00ff00, PorterDuff.Mode.MULTIPLY );
+                break;
+            case 3:
+                if(skip0.getVisibility() != View.GONE) skip0.setColorFilter( 0xffffff00, PorterDuff.Mode.MULTIPLY );
+                if(skip1.getVisibility() != View.GONE) skip1.setColorFilter( 0xffffff00, PorterDuff.Mode.MULTIPLY );
+                if(skip2.getVisibility() != View.GONE) skip2.setColorFilter( 0xffffff00, PorterDuff.Mode.MULTIPLY );
+                break;
         }
     }
 
-    private void updateWins(int position) {
-        if(position == focusTeam)
-            win_counter.setText(teams.get(focusTeam).getWins()+"");
+    private void updateLoseImage(){
+        this.win_counter.setText(getString(R.string.winString,focusTeam.getWins()));
+        Log.d(TAG,"UpdateLoseImage, Team: "+focusTeam+" getLosses = "+focusTeam.getLosses());
+        switch (focusTeam.getLosses()) {
+            case 0:
+                this.loss_counter.setImageResource(R.drawable.lose_0);
+                break;
+            case 1:
+                this.loss_counter.setImageResource(R.drawable.lose_1);
+                break;
+            case 2:
+                this.loss_counter.setImageResource(R.drawable.lose_2);
+                break;
+            case 3:
+                this.loss_counter.setImageResource(R.drawable.lose_3);
+                break;
+        }
+        switch (focusTeam.getTeam()){
+            case 0:
+                this.loss_counter.setColorFilter(0xffff0000, PorterDuff.Mode.MULTIPLY );
+                break;
+            case 1:
+                this.loss_counter.setColorFilter( 0xff0000ff, PorterDuff.Mode.MULTIPLY );
+                break;
+            case 2:
+                this.loss_counter.setColorFilter( 0xff00ff00, PorterDuff.Mode.MULTIPLY );
+                break;
+            case 3:
+                this.loss_counter.setColorFilter( 0xffffff00, PorterDuff.Mode.MULTIPLY );
+                break;
+        }
+    }
 
-        if(teams.get(position).getWins() < NUMWINS) {
-            teams.get(position).updatePointersFromWin();
-            adapter.notifyItemChanged(position);
+    private void updateWins(Team team) {
+        if(team == focusTeam)
+            win_counter.setText(getString(R.string.winString,focusTeam.getWins()));
+
+        if(team.getWins() < NUMWINS) {
+            team.updatePointersFromWin();
+            adapter.notifyItemChanged(teams.indexOf(team));
         }
 
-        Log.d(TAG,teams.get(position)+":"+teams.get(position).getWins()+"/"+NUMWINS+"Team X Wins/NumWins");
-        if(teams.get(position).getWins() == NUMWINS){
-            Log.d(TAG,"Starting Win");
-
+        Log.d(TAG,focusTeam.getTeam()+":"+focusTeam.getWins()+"/"+NUMWINS+"Team X Wins/NumWins");
+        if(focusTeam.getWins() == NUMWINS){
             Intent intent = new Intent(this, WinningActivity.class);
-            intent.putExtra("team",teams.get(focusTeam).getTeam());
+            intent.putExtra("team",focusTeam.getTeam());
             Bundle bundle = new Bundle();
-            teams.get(focusTeam).addRandoms();
-            bundle.putSerializable("comp",teams.get(focusTeam).getFighters());
+            focusTeam.addRandoms();
+            bundle.putSerializable("comp",focusTeam.getFighters());
             intent.putExtras(bundle);
 
             startActivity(intent);
+        }
+        if(GAMEMODE.equals("Draft As You Go")){
+            if(team == focusTeam) {
+                Intent intent = new Intent(this, DraftActivity.class);
+                intent.putExtra("prevActivity", "GamePlayActivity");
+                for (int i = 0; i < team.getTeamSize(); i++)
+                    draftOrder.add(0,team.getTeam());
+                intent.putIntegerArrayListExtra("draftOrder", draftOrder);
+                startActivity(intent);
+            }else{
+                for (int i = 0; i < team.getTeamSize(); i++)
+                    draftOrder.add(team.getTeam());
+            }
         }
     }
 
     public void setFocusTeam(int position){
         int team = teams.get(position).getTeam();
-        this.focusTeam = position;
-        win_counter.setText(teams.get(position).getWins()+"");
+        this.focusTeam = teams.get(position);
+        win_counter.setText(getString(R.string.winString,focusTeam.getWins()));
         Window window = getWindow();
         window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
         switch (team) {
@@ -303,11 +361,21 @@ public class GamePlayActivity extends AppCompatActivity implements View.OnClickL
                 if(skipOn) this.skip_button.setTextColor(Color.parseColor("#000000"));
                 break;
         }
+        updateSkipImages();
         updateLoseImage();
     }
 
     @Override
     public void onTeamClick(int position) {
         setFocusTeam(position);
+    }
+
+    @Override
+    public void onResume() {
+        for(int i = 0; i < NUMTEAMS; i++){
+            adapter.notifyItemChanged(i);
+            Log.d(TAG,"Team: "+i+" points:"+ Arrays.toString(teams.get(i).getPointers()) +" fighters:"+teams.get(i).getFighters());
+        }
+        super.onResume();
     }
 }

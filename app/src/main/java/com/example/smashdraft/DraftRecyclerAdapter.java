@@ -48,19 +48,18 @@ public class DraftRecyclerAdapter extends RecyclerView.Adapter<DraftRecyclerAdap
 
     @Override
     public void onBindViewHolder(@NonNull DraftRecyclerViewHolder holder, int position) {
+        Log.d(TAG,"Fighters are:"+mFighters);
         Fighter fighter = mFighters.get(position);
-
         holder.mImageView.setImageResource(fighter.getImageId());
         if(((DraftActivity)mContext).getListView() && holder.mTextView != null){
             holder.mTextView.setText(fighter.getName());
-
             //set Colors of text when drafted
-            switch (((DraftActivity) mContext).draftedTeam(fighter)) {
+            switch (draftedTeam(fighter)) {
                 case 0:
-                    holder.mTextView.setTextColor(ContextCompat.getColor(mContext, R.color.blue));
+                    holder.mTextView.setTextColor(ContextCompat.getColor(mContext, R.color.red));
                     break;
                 case 1:
-                    holder.mTextView.setTextColor(ContextCompat.getColor(mContext, R.color.red));
+                    holder.mTextView.setTextColor(ContextCompat.getColor(mContext, R.color.blue));
                     break;
                 case 2:
                     holder.mTextView.setTextColor(ContextCompat.getColor(mContext, R.color.green));
@@ -74,14 +73,13 @@ public class DraftRecyclerAdapter extends RecyclerView.Adapter<DraftRecyclerAdap
             }
         }
         else if(!((DraftActivity)mContext).getListView() && holder.mItemView != null){
-            Log.d(TAG,"mFighterCell");
             //set Colors of text when drafted
-            switch (((DraftActivity) mContext).draftedTeam(fighter)) {
+            switch (draftedTeam(fighter)) {
                 case 0:
-                    holder.mItemView.setBackgroundColor(ContextCompat.getColor(mContext, R.color.blue));
+                    holder.mItemView.setBackgroundColor(ContextCompat.getColor(mContext, R.color.red));
                     break;
                 case 1:
-                    holder.mItemView.setBackgroundColor(ContextCompat.getColor(mContext, R.color.red));
+                    holder.mItemView.setBackgroundColor(ContextCompat.getColor(mContext, R.color.blue));
                     break;
                 case 2:
                     holder.mItemView.setBackgroundColor(ContextCompat.getColor(mContext, R.color.green));
@@ -94,6 +92,18 @@ public class DraftRecyclerAdapter extends RecyclerView.Adapter<DraftRecyclerAdap
                     break;
             }
         }
+    }
+
+    private int draftedTeam(Fighter fighter) {
+        Team team0 = ((ManagingApplication) mContext.getApplicationContext()).team0;
+        if(team0 != null && team0.contains(fighter)) return 0;
+        Team team1 = ((ManagingApplication) mContext.getApplicationContext()).team1;
+        if(team1 != null && team1.contains(fighter)) return 1;
+        Team team2 = ((ManagingApplication) mContext.getApplicationContext()).team2;
+        if(team2 != null && team2.contains(fighter)) return 2;
+        Team team3 = ((ManagingApplication) mContext.getApplicationContext()).team3;
+        if(team3 != null && team3.contains(fighter)) return 3;
+        return -1;
     }
 
     public static class DraftRecyclerViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener{

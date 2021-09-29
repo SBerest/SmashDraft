@@ -7,6 +7,7 @@
     <string name="skip">Skip</string>
     <string name="losses_image">losses_image</string>
     <string name="_0">0</string>
+    <string name="winString">%1$d</string>
     <string name="player_1_s_character">player 1\'s character</string>
     <string name="player_2_s_character">player 2\'s character</string>
     <string name="smash_draft">Smash Draft</string>

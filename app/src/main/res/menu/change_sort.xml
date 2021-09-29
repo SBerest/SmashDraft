@@ -5,7 +5,7 @@
     <!-- "Mark Favorite", should appear as action button if possible -->
     <item
         android:id="@+id/action_sort"
-        android:icon="@drawable/symb_1to9"
+        android:icon="@drawable/symb_atoz"
         android:title="@string/action_sort"
         app:showAsAction="always"/>
 

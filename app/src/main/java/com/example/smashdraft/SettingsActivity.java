@@ -22,7 +22,6 @@ public class SettingsActivity extends AppCompatActivity{
 
         String gameMode = sharedPreferences.getString("gameMode","Draft As You Go");
         Log.d(TAG,"gameMode: "+gameMode);
-
         int numTeams = sharedPreferences.getInt("numTeams",4);
         Log.d(TAG,"numTeams: "+numTeams);
         int numRed = sharedPreferences.getInt("numRed",2);
@@ -30,17 +29,19 @@ public class SettingsActivity extends AppCompatActivity{
         int numBlue = sharedPreferences.getInt("numBlue",2);
         Log.d(TAG,"numBlue: "+numBlue);
         int numGreen = sharedPreferences.getInt("numGreen",2);
+        Log.d(TAG,"numGreen: "+numGreen);
         int numYellow = sharedPreferences.getInt("numYellow",2);
         Log.d(TAG,"numYellow: "+numYellow);
-        Log.d(TAG,"numGreen: "+numGreen);
+        int numCharacters = sharedPreferences.getInt("numCharacters",8);
+        Log.d(TAG,"numCharacters: "+numCharacters);
         int numRandoms = sharedPreferences.getInt("numRandoms",2);
         Log.d(TAG,"numRandoms: "+numRandoms);
         boolean randomEnd = sharedPreferences.getBoolean("randomEnd",true);
         Log.d(TAG,"randomEnd: "+randomEnd);
         int numSkips = sharedPreferences.getInt("numSkips",1);
         Log.d(TAG,"numSkips: "+numSkips);
-        boolean skipBehind = sharedPreferences.getBoolean("skipBehind",true);
-        Log.d(TAG,"skipBehind: "+skipBehind);
+        boolean skipAnyTime = sharedPreferences.getBoolean("skipAnyTime",false);
+        Log.d(TAG,"skipAnyTime: "+skipAnyTime);
         super.onBackPressed();
     }
 }

@@ -4,12 +4,10 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
-import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
@@ -27,7 +25,7 @@ public class WinningActivity extends AppCompatActivity {
         TextView text = findViewById(R.id.winningTeam);
 
         int team = intent.getIntExtra("team", 0);
-        ArrayList<Fighter> fighters = (ArrayList<Fighter>) bundle.getSerializable("comp");
+        ArrayList<Fighter> fighters = (ArrayList<Fighter>) bundle.getSerializable("comp"); //TODO change to parcelable
 
         Log.d(TAG,"Team: "+team+" | Fighters:"+fighters);
 
@@ -54,8 +52,13 @@ public class WinningActivity extends AppCompatActivity {
         }
 
         RecyclerView mRecyclerView = findViewById(R.id.winningRecyclerView);
-        mRecyclerView.setLayoutManager(new GridLayoutManager(this,2));
-        WinningRecyclerAdapter adapter = new WinningRecyclerAdapter(this, fighters);
+        int noOfColumns = 2;
+        if(fighters.size() > 30) noOfColumns = 9;
+        else if(fighters.size() > 20) noOfColumns = 4;
+        else if(fighters.size() > 16) noOfColumns = 3;
+
+        mRecyclerView.setLayoutManager(new GridLayoutManager(this,noOfColumns));
+        WinningRecyclerAdapter adapter = new WinningRecyclerAdapter(this, fighters, noOfColumns, this);
         mRecyclerView.setAdapter(adapter);
         mRecyclerView.setHasFixedSize(true);
     }

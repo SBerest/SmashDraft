@@ -1,11 +1,17 @@
 package com.example.smashdraft;
 
+import android.app.Activity;
 import android.content.Context;
+import android.util.DisplayMetrics;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
+import android.widget.GridLayout;
 import android.widget.ImageView;
 
+import androidx.appcompat.view.menu.MenuView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
@@ -15,17 +21,23 @@ public class WinningRecyclerAdapter extends RecyclerView.Adapter<WinningRecycler
     private ArrayList<Fighter> mFighters;
     private LayoutInflater mInflater;
     private ItemClickListener mClickListener;
+    private int mNumColumns;
+    private Activity mWinningActivity;
+
 
     // data is passed into the constructor
-     WinningRecyclerAdapter(Context context, ArrayList<Fighter> data) {
+     WinningRecyclerAdapter(Context context, ArrayList<Fighter> data, int numColumns, Activity winningActivity) {
         this.mInflater = LayoutInflater.from(context);
         this.mFighters = data;
+        this.mNumColumns = numColumns;
+        this.mWinningActivity = winningActivity;
     }
 
     // inflates the row layout from xml when needed
     @Override
     public ViewHolder onCreateViewHolder(ViewGroup ViewGroup, int viewType) {
         View view = mInflater.inflate(R.layout.winning_fighter_cell, ViewGroup, false);
+
         return new ViewHolder(view);
     }
 
@@ -33,6 +45,14 @@ public class WinningRecyclerAdapter extends RecyclerView.Adapter<WinningRecycler
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
         Fighter fighter = mFighters.get(position);
+
+        DisplayMetrics dm = mWinningActivity.getResources().getDisplayMetrics();
+        holder.itemView.getLayoutParams().width = dm.widthPixels / mNumColumns;
+
+        int numRows = (int)(Math.ceil((double) mFighters.size()/mNumColumns));
+        holder.itemView.getLayoutParams().height = ((int) (dm.heightPixels*0.75) / numRows);
+        
+
         holder.mImageView.setImageResource(fighter.getImageId());
     }
 
@@ -46,11 +66,13 @@ public class WinningRecyclerAdapter extends RecyclerView.Adapter<WinningRecycler
     // stores and recycles views as they are scrolled off screen
     public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
         ImageView mImageView;
+        View mItemView;
 
         ViewHolder(View itemView) {
             super(itemView);
             mImageView = itemView.findViewById(R.id.win_char);
             itemView.setOnClickListener(this);
+            this.mItemView = itemView;
         }
 
         @Override

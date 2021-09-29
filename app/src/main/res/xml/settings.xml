@@ -27,17 +27,6 @@
             app:iconSpaceReserved="false"/>
 
         <SeekBarPreference
-            android:title="Amount of Blue Team Players"
-            android:key="numBlue"
-            android:max="4"
-            app:min="1"
-            app:defaultValue="2"
-            app:showSeekBarValue="true"
-            app:updatesContinuously="false"
-            app:selectable="false"
-            app:icon="@drawable/smash_blue"/>
-
-        <SeekBarPreference
             android:title="Amount of Red Team Players"
             android:key="numRed"
             android:max="4"
@@ -47,6 +36,17 @@
             app:updatesContinuously="false"
             app:selectable="false"
             app:icon="@drawable/smash_red" />
+
+        <SeekBarPreference
+            android:title="Amount of Blue Team Players"
+            android:key="numBlue"
+            android:max="4"
+            app:min="1"
+            app:defaultValue="2"
+            app:showSeekBarValue="true"
+            app:updatesContinuously="false"
+            app:selectable="false"
+            app:icon="@drawable/smash_blue"/>
 
         <SeekBarPreference
             android:title="Amount of Green Team Players"
@@ -120,8 +120,8 @@
         <SwitchPreference
             android:title="When can you skip?"
             android:key="skipSwitch"
-            android:defaultValue="true"
-            app:summary="A team can skip at any time."
+            android:defaultValue="false"
+            app:summary="A team can only skip while STRICLY behind."
             app:iconSpaceReserved="false"/>
     </PreferenceCategory>
 

@@ -10,7 +10,6 @@ import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.SeekBarPreference;
 import androidx.preference.SwitchPreference;
 
-import java.nio.channels.SelectionKey;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Objects;
@@ -93,16 +92,70 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Prefer
     public boolean onPreferenceChange(Preference preference, Object newValue) {
         Log.d(TAG,"\nPreference: "+preference + " | newValue: "+newValue);
         switch (preference.getKey()) {
-            case "gameMode":
+            case "gameMode": {
                 preference.setTitle((String) newValue);
                 preference.setSummary(gameModeDescriptions.get(newValue));
-                spEditor.putString("gameMode",(String) newValue);
-                spEditor.commit();
-                break;
-            case "numTeams":
+                Log.d(TAG, newValue + " | " + (newValue.toString().equals("Columns")));
+                SeekBarPreference numTeamsPref = findPreference("numTeams");
+                SeekBarPreference numRedPref = findPreference("numRed");
+                SeekBarPreference numBluePref = findPreference("numBlue");
+                SeekBarPreference numCharPref = findPreference("numCharacters");
                 SeekBarPreference numGreenPref = findPreference("numGreen");
                 SeekBarPreference numYellowPref = findPreference("numYellow");
 
+                assert numTeamsPref != null;
+                assert numRedPref != null;
+                assert numBluePref != null;
+                assert numGreenPref != null;
+                assert numYellowPref != null;
+                assert numCharPref != null;
+                if (newValue.toString().equals("Columns")) {
+
+                    numTeamsPref.setValue(2);
+                    numTeamsPref.setEnabled(false);
+
+                    numRedPref.setValue(4);
+                    numRedPref.setEnabled(false);
+                    numBluePref.setValue(4);
+                    numBluePref.setEnabled(false);
+
+                    numGreenPref.setIcon(R.drawable.smash_grey);
+                    numGreenPref.setMin(0);
+                    numGreenPref.setValue(0);
+                    numGreenPref.setEnabled(false);
+
+                    numYellowPref.setIcon(R.drawable.smash_grey);
+                    numYellowPref.setMin(0);
+                    numYellowPref.setValue(0);
+                    numYellowPref.setEnabled(false);
+
+                    numCharPref.setEnabled(false);
+                    numCharPref.setMax(72);
+                    numCharPref.setValue(17);
+
+                    spEditor.putInt("numTeams", ((SeekBarPreference) Objects.requireNonNull(findPreference("numTeams"))).getValue());
+                    spEditor.putInt("numRed", ((SeekBarPreference) Objects.requireNonNull(findPreference("numRed"))).getValue());
+                    spEditor.putInt("numBlue",((SeekBarPreference) Objects.requireNonNull(findPreference("numBlue"))).getValue());
+                    spEditor.putInt("numGreen",((SeekBarPreference) Objects.requireNonNull(findPreference("numGreen"))).getValue());
+                    spEditor.putInt("numYellow",((SeekBarPreference) Objects.requireNonNull(findPreference("numYellow"))).getValue());
+                    spEditor.putInt("numCharacters",((SeekBarPreference) Objects.requireNonNull(findPreference("numCharacters"))).getValue());
+                    spEditor.commit();
+                } else {
+                    numTeamsPref.setEnabled(true);
+                    numRedPref.setEnabled(true);
+                    numBluePref.setEnabled(true);
+                    numCharPref.setEnabled(true);
+                    numGreenPref.setMin(1);
+                    numYellowPref.setMin(1);
+                    numCharPref.setMax(18);
+                }
+                spEditor.putString("gameMode", (String) newValue);
+                spEditor.commit();
+                break;
+            }
+            case "numTeams":
+                SeekBarPreference numGreenPref = findPreference("numGreen");
+                SeekBarPreference numYellowPref = findPreference("numYellow");
                 assert numGreenPref != null;
                 numGreenPref.setEnabled(true);
                 numGreenPref.setIcon(R.drawable.smash_green);
@@ -129,6 +182,8 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Prefer
                         break;
                 }
 
+                balanceTeamValues();
+
                 spEditor.putInt("numTeams",(int) newValue);
                 spEditor.putInt("numRed", ((SeekBarPreference) Objects.requireNonNull(findPreference("numRed"))).getValue());
                 spEditor.putInt("numBlue",((SeekBarPreference) Objects.requireNonNull(findPreference("numBlue"))).getValue());
@@ -149,9 +204,9 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Prefer
                 balanceTeamValues();
 
                 spEditor.putInt("numRed", ((SeekBarPreference) Objects.requireNonNull(findPreference("numRed"))).getValue());
-                spEditor.putInt("numBlue",((SeekBarPreference) Objects.requireNonNull(findPreference("numBlue"))).getValue());
-                spEditor.putInt("numGreen",((SeekBarPreference) Objects.requireNonNull(findPreference("numGreen"))).getValue());
-                spEditor.putInt("numYellow",((SeekBarPreference) Objects.requireNonNull(findPreference("numYellow"))).getValue());
+                spEditor.putInt("numBlue", ((SeekBarPreference) Objects.requireNonNull(findPreference("numBlue"))).getValue());
+                spEditor.putInt("numGreen", ((SeekBarPreference) Objects.requireNonNull(findPreference("numGreen"))).getValue());
+                spEditor.putInt("numYellow", ((SeekBarPreference) Objects.requireNonNull(findPreference("numYellow"))).getValue());
                 spEditor.commit();
                 break;
 
@@ -159,6 +214,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Prefer
                 spEditor.putInt("numRandoms",(int) newValue);
                 spEditor.commit();
                 SwitchPreference randomSwitch = findPreference("randomSwitch");
+                assert randomSwitch != null;
                 randomSwitch.setEnabled((int) newValue != 0);
                 break;
 
@@ -174,7 +230,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Prefer
                 break;
 
             case "numCharacters":
-                spEditor.putInt("numCharacters",(int) newValue);
+                spEditor.putInt("numCharacters", (int) newValue);
                 spEditor.commit();
                 break;
 
@@ -187,6 +243,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Prefer
                 preference.setSummary(toSend);
 
                 SwitchPreference skipSwitch = findPreference("skipSwitch");
+                assert skipSwitch != null;
                 skipSwitch.setEnabled((int) newValue != 0);
 
                 spEditor.putInt("numSkips",(int) newValue);
@@ -195,11 +252,11 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Prefer
 
             case "skipSwitch":
                 if ((Boolean) newValue) {
-                    preference.setSummary("A team can only skip while STRICLY behind.");
-                } else {
                     preference.setSummary("A team can skip at any time.");
+                } else {
+                    preference.setSummary("A team can only skip while STRICLY behind.");
                 }
-                spEditor.putBoolean("skipBehind",(boolean) newValue);
+                spEditor.putBoolean("skipAnyTime",(boolean) newValue);
                 spEditor.commit();
                 break;
         }
@@ -284,23 +341,23 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Prefer
             assert numSkipsPref != null;
             numSkipsPref.setValue(numSkips);
 
-            boolean skipBehind = sharedPreferences.getBoolean("skipBehind",true);
-            Log.d(TAG,"skipBehind: "+skipBehind);
+            boolean skipAnyTime = sharedPreferences.getBoolean("skipAnyTime",true);
+            Log.d(TAG,"skipAnyTime: "+skipAnyTime);
             SwitchPreference skipSwitchPref = findPreference("skipSwitch");
             assert skipSwitchPref != null;
-            skipSwitchPref.setChecked(skipBehind);
+            skipSwitchPref.setChecked(skipAnyTime);
 
-            onPreferenceChange(gameModePref,gameMode);
             onPreferenceChange(numTeamsPref,numTeams);
             onPreferenceChange(numBluePref,numBlue);
             onPreferenceChange(numRedPref,numRed);
             onPreferenceChange(numGreenPref,numGreen);
             onPreferenceChange(numYellowPref,numYellow);
+            onPreferenceChange(gameModePref,gameMode);
             onPreferenceChange(numCharactersPref,numCharacters);
             onPreferenceChange(numRandomsPref,numRandoms);
             onPreferenceChange(randomSwitchPref,randomEnd);
             onPreferenceChange(numSkipsPref,numSkips);
-            onPreferenceChange(skipSwitchPref,skipBehind);
+            onPreferenceChange(skipSwitchPref,skipAnyTime);
         }
     }
 
@@ -311,10 +368,8 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Prefer
             sum += ((SeekBarPreference) teamQueue.get(i)).getValue();
         }
         while (sum > 8 && count < 10000) {
-
             count += 1;
             SeekBarPreference head = (SeekBarPreference) teamQueue.pop();
-
             int diff = sum - 8;
             if (head.getValue() - 1 > diff) {
                 sum -= diff;
@@ -325,6 +380,5 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Prefer
             }
             teamQueue.add(head);
         }
-
     }
 }
