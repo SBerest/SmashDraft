@@ -1,10 +1,7 @@
 package com.example.smashdraft;
-
 import androidx.annotation.NonNull;
 
-import java.io.Serializable;
-
-public class Fighter  implements Serializable, Comparable<Fighter> {
+public class Fighter  implements Comparable<Fighter> {
     private final int imageId;
     private final String name;
 
@@ -22,7 +19,11 @@ public class Fighter  implements Serializable, Comparable<Fighter> {
     }
 
     @Override
-    public int compareTo(Fighter ch) {
-        return this.getName().compareTo(ch.getName());
+    @NonNull
+    public String toString(){return this.name;}
+
+    @Override
+    public int compareTo(Fighter fighter) {
+        return this.getName().compareTo(fighter.getName());
     }
 }

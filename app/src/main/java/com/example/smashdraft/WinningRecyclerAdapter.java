@@ -3,26 +3,23 @@ package com.example.smashdraft;
 import android.app.Activity;
 import android.content.Context;
 import android.util.DisplayMetrics;
-import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
-import android.widget.GridLayout;
 import android.widget.ImageView;
 
-import androidx.appcompat.view.menu.MenuView;
+import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
 
 public class WinningRecyclerAdapter extends RecyclerView.Adapter<WinningRecyclerAdapter.ViewHolder> {
 
-    private ArrayList<Fighter> mFighters;
-    private LayoutInflater mInflater;
+    private final ArrayList<Fighter> mFighters;
+    private final LayoutInflater mInflater;
     private ItemClickListener mClickListener;
-    private int mNumColumns;
-    private Activity mWinningActivity;
+    private final int mNumColumns;
+    private final Activity mWinningActivity;
 
 
     // data is passed into the constructor
@@ -34,10 +31,10 @@ public class WinningRecyclerAdapter extends RecyclerView.Adapter<WinningRecycler
     }
 
     // inflates the row layout from xml when needed
+    @NonNull
     @Override
-    public ViewHolder onCreateViewHolder(ViewGroup ViewGroup, int viewType) {
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup ViewGroup, int viewType) {
         View view = mInflater.inflate(R.layout.winning_fighter_cell, ViewGroup, false);
-
         return new ViewHolder(view);
     }
 
@@ -62,7 +59,6 @@ public class WinningRecyclerAdapter extends RecyclerView.Adapter<WinningRecycler
         return mFighters.size();
     }
 
-
     // stores and recycles views as they are scrolled off screen
     public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
         ImageView mImageView;
@@ -79,16 +75,6 @@ public class WinningRecyclerAdapter extends RecyclerView.Adapter<WinningRecycler
         public void onClick(View view) {
             if (mClickListener != null) mClickListener.onItemClick(view, getAdapterPosition());
         }
-    }
-
-    // convenience method for getting data at click position
-    Fighter getItem(int id) {
-        return mFighters.get(id);
-    }
-
-    // allows clicks events to be caught
-    void setClickListener(ItemClickListener itemClickListener) {
-        this.mClickListener = itemClickListener;
     }
 
     // parent activity will implement this method to respond to click events

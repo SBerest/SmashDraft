@@ -46,7 +46,7 @@
 
     <Button
         android:id="@+id/join_button"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginStart="8dp"
         android:layout_marginLeft="8dp"
@@ -58,7 +58,9 @@
         android:paddingBottom="2dp"
         android:textAllCaps="false"
         android:textColor="@color/white"
-        android:textSize="36sp"
+        android:autoSizeTextType="uniform"
+        android:autoSizeMinTextSize="28sp"
+        android:autoSizeMaxTextSize="48sp"
         app:layout_constraintBottom_toTopOf="@id/settings_button"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -66,7 +68,7 @@
 
     <Button
         android:id="@+id/settings_button"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginStart="8dp"
         android:layout_marginLeft="8dp"
@@ -78,7 +80,9 @@
         android:paddingBottom="2dp"
         android:textAllCaps="false"
         android:textColor="@color/white"
-        android:textSize="36sp"
+        android:autoSizeTextType="uniform"
+        android:autoSizeMinTextSize="28sp"
+        android:autoSizeMaxTextSize="48sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

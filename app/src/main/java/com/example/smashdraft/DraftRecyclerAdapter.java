@@ -5,6 +5,7 @@ import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.graphics.Color;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -22,7 +23,6 @@ public class DraftRecyclerAdapter extends RecyclerView.Adapter<DraftRecyclerAdap
     private final onFighterListener mOnFighterListener;
     private final Context mContext;
 
-
     public interface onFighterListener{
         void onFighterClick(int position);
     }
@@ -38,17 +38,15 @@ public class DraftRecyclerAdapter extends RecyclerView.Adapter<DraftRecyclerAdap
     public DraftRecyclerViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int position) {
         boolean list = ((DraftActivity) mContext).getListView();
         View v;
-        if(list){
+        if(list)
             v = LayoutInflater.from(viewGroup.getContext()).inflate(R.layout.fighter_cell, viewGroup, false);
-        }else{
+        else
             v = LayoutInflater.from(viewGroup.getContext()).inflate(R.layout.fighter_grid, viewGroup, false);
-        }
         return new DraftRecyclerViewHolder(v, mContext, mOnFighterListener);
     }
 
     @Override
     public void onBindViewHolder(@NonNull DraftRecyclerViewHolder holder, int position) {
-        Log.d(TAG,"Fighters are:"+mFighters);
         Fighter fighter = mFighters.get(position);
         holder.mImageView.setImageResource(fighter.getImageId());
         if(((DraftActivity)mContext).getListView() && holder.mTextView != null){
@@ -88,7 +86,7 @@ public class DraftRecyclerAdapter extends RecyclerView.Adapter<DraftRecyclerAdap
                     holder.mItemView.setBackgroundColor(ContextCompat.getColor(mContext, R.color.yellow));
                     break;
                 default:
-                    holder.mItemView.setBackgroundColor(ContextCompat.getColor(mContext, R.color.white));
+                    holder.mItemView.setBackgroundColor(ContextCompat.getColor(mContext, R.color.black));
                     break;
             }
         }
@@ -97,12 +95,16 @@ public class DraftRecyclerAdapter extends RecyclerView.Adapter<DraftRecyclerAdap
     private int draftedTeam(Fighter fighter) {
         Team team0 = ((ManagingApplication) mContext.getApplicationContext()).team0;
         if(team0 != null && team0.contains(fighter)) return 0;
+
         Team team1 = ((ManagingApplication) mContext.getApplicationContext()).team1;
         if(team1 != null && team1.contains(fighter)) return 1;
+
         Team team2 = ((ManagingApplication) mContext.getApplicationContext()).team2;
         if(team2 != null && team2.contains(fighter)) return 2;
+
         Team team3 = ((ManagingApplication) mContext.getApplicationContext()).team3;
         if(team3 != null && team3.contains(fighter)) return 3;
+
         return -1;
     }
 

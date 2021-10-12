@@ -18,16 +18,10 @@ public class WinningActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_win);
-
-        Intent intent = this.getIntent();
-        Bundle bundle = intent.getExtras();
-
         TextView text = findViewById(R.id.winningTeam);
 
-        int team = intent.getIntExtra("team", 0);
-        ArrayList<Fighter> fighters = (ArrayList<Fighter>) bundle.getSerializable("comp"); //TODO change to parcelable
-
-        Log.d(TAG,"Team: "+team+" | Fighters:"+fighters);
+        int team = ((ManagingApplication)getApplicationContext()).winningTeamNum;
+        ArrayList<Fighter> fighters = ((ManagingApplication)getApplicationContext()).winningTeamComp;
 
         switch (team){
             case 0:

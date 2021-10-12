@@ -25,14 +25,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     public void onClick(View v) {
-        int clickedId = v.getId();
-        if (clickedId == R.id.join_button) {
+        if (v.getId() == R.id.join_button) {
             Log.d(TAG, "Join Clicked");
             Intent intent = new Intent(this, DraftActivity.class);
             intent.putExtra("prevActivity","MainActivity");
             startActivity(intent);
-        }
-        else if(clickedId == R.id.settings_button){
+        } else if(v.getId() == R.id.settings_button){
             Log.d(TAG, "Settings Clicked");
             Intent intent = new Intent(this, SettingsActivity.class);
             startActivity(intent);

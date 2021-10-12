@@ -24,9 +24,9 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
+import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
-import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 
@@ -36,58 +36,51 @@ import java.util.Collections;
 import java.util.Objects;
 
 public class DraftActivity extends AppCompatActivity implements DraftRecyclerAdapter.onFighterListener {
-
     private static final String TAG = "Draft Activity";
-    private int NUMTEAMS;
+    private int numTeams;
+    private int numToDraft;
+    private String gameMode;
+    private String prevActivity;
 
-    private AutoCompleteTextView editText;
+    private final ArrayList<Fighter> fighters = new ArrayList<>(); //current visible fighters for the recycler view
+    private final ArrayList<Fighter> autoCompleteFighters = new ArrayList<>();
+    private final ArrayList<Fighter> idSortedFighters = new ArrayList<>(); //backup of fighters sorted by date (default sort)
+    private final ArrayList<Fighter> alphaSortedFighters = new ArrayList<>(); // //backup of fighters sorted by alphabet (default sort)
 
-    private final ArrayList<Fighter> fighters = new ArrayList<>(); //all fighter_cell
-    private final ArrayList<Fighter> fullFighters = new ArrayList<>();
-    private final ArrayList<Fighter> alphaSortedFighters = new ArrayList<>();
-
-    RecyclerView mRecyclerView;
-    DraftRecyclerAdapter adapter;
+    private final ArrayList<ArrayList<Fighter>> spDrafted = new ArrayList<>(); //Fighters drafted
+    private ArrayList<Integer> draftOrder; //order that teams will be drafted
+    private ArrayList<Fighter> lastDrafted;
+    private int draftOrderIndex;
 
     private Menu menu;
-    int indexOfRecentRandom;
-    boolean eye = true;
-    boolean alphaSort = false;
-    final Context mContext = this;
-    private int DRAFTINGNUM;
-    boolean auto;
-    static String GAMEMODE;
-    String PREVACTIVITY;
+    private final Context mContext = this;
+    private RecyclerView mRecyclerView;
+    private DraftRecyclerAdapter adapter;
 
-    ArrayList<ArrayList<Fighter>> spDrafted = new ArrayList<>();
+    private boolean auto;
+    private AutoCompleteTextView actv;
+    private AutoCompleteCharacterAdapter autoFighterAdapter;
 
-    int spTeam;
-    private ArrayList<Integer> draftOrder;
-    private int draftOrderIndex = 0;
-    boolean listView = true;
-    ArrayList<Fighter> lastDrafted;
+    private boolean showDrafted = true;
+    private boolean alphaSort = false;
+    private boolean listView = false;
+    private int indexOfRecentRandom;
 
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        Log.d(TAG,"onCreate");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_draft);
 
+        //Grab variables from settings
         SharedPreferences sharedPreferences = this.getSharedPreferences("settings", Context.MODE_PRIVATE);
-        GAMEMODE = sharedPreferences.getString("gameMode", "Draft As You Go");
-        NUMTEAMS = sharedPreferences.getInt("numTeams", 4);
-        if (!GAMEMODE.equals("Draft As You Go")) {
-            if (NUMTEAMS == 2) {
-                draftOrder = new ArrayList<>(Arrays.asList(0, 1));
-            } else if (NUMTEAMS == 3) {
-                draftOrder = new ArrayList<>(Arrays.asList(0, 1, 2, 2, 1, 0));
-            } else if (NUMTEAMS == 4) {
-                draftOrder = new ArrayList<>(Arrays.asList(0, 1, 2, 3, 3, 2, 1, 0));
-            }
-        }
+        gameMode = sharedPreferences.getString("gameMode", "Draft As You Go");
+        numTeams = sharedPreferences.getInt("numTeams", 4);
         lastDrafted = new ArrayList<>();
-        switch(NUMTEAMS){
+        this.numToDraft = sharedPreferences.getInt("numCharacters", 8);
+
+        //Set up the teams if they are not saved otherwise grab them from the Managing Application
+        switch(numTeams){
             case 4:
                 if (((ManagingApplication) getApplicationContext()).team3 == null)
                     ((ManagingApplication) getApplicationContext()).team3 = new Team(new ArrayList<>(), 3, sharedPreferences);
@@ -108,431 +101,31 @@ public class DraftActivity extends AppCompatActivity implements DraftRecyclerAda
                 spDrafted.add(1, ((ManagingApplication) getApplicationContext()).team1.getFighters());
                 lastDrafted.addAll(spDrafted.get(1));
         }
-
         lastDrafted.add(new Fighter(R.drawable.img_00_question,"Random"));
         indexOfRecentRandom = lastDrafted.size()-1;
 
-        Log.d(TAG,"Last Drafted"+lastDrafted.toString());
-
-        this.DRAFTINGNUM = sharedPreferences.getInt("numCharacters", 8);
-
-        //set up auto complete bar
-        ArrayList<String> mNames = new ArrayList<>();
-        for (int i = 0; i < fighters.size(); i++) {
-            mNames.add(fighters.get(i).getName());
-        }
-
-        final ArrayAdapter<String> autoAdapter = new ArrayAdapter<>
-                (this, android.R.layout.select_dialog_item, mNames);
-        AutoCompleteTextView actv = findViewById(R.id.autoCompleteTextView);
-        actv.setThreshold(1);//will start working from first character
-        actv.setAdapter(autoAdapter);//setting the adapter data into the AutoCompleteTextView
-        actv.setTextColor(Color.parseColor("#FF7F00"));
-        actv.setOnFocusChangeListener((v, hasFocus) -> auto = hasFocus);
-        actv.setOnItemClickListener((parent, arg1, pos, id) -> confirmDraft((Fighter)parent.getItemAtPosition(pos)));
-
         initFighters();
-        Log.d(TAG,"FIRST CHARACTER:"+fighters.get(0));
         initRecyclerView();
+        initGamemodes();
+        initAutoComplete();
 
-        switch (GAMEMODE) {
-            case "Draft As You Go":
-                Intent intent = this.getIntent();
-                PREVACTIVITY = intent.getStringExtra("prevActivity");
-                if(spDrafted.get(0).size() != 0) {
-                    draftOrder = intent.getIntegerArrayListExtra("draftOrder");
-                }if(spDrafted.get(0).size() == 0 || draftOrder == null){
-                    if (NUMTEAMS == 2) {
-                        draftOrder = new ArrayList<>(Arrays.asList(0, 0, 1, 1));
-                    } else if (NUMTEAMS == 3) {
-                        draftOrder = new ArrayList<>(Arrays.asList(0, 0, 1, 1, 2, 2));
-                    } else if (NUMTEAMS == 4) {
-                        draftOrder = new ArrayList<>(Arrays.asList(0, 0, 1, 1, 2, 2, 3, 3));
-                    }
-                }
-                assert draftOrder != null;
-                spTeam = draftOrder.get(0);
-                Window window = getWindow();
-                window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-                switch (draftOrder.get(0)){
-                    case 0:
-                        window.setStatusBarColor(getResources().getColor(R.color.darker_red,null));
-                        break;
-                    case 1:
-                        window.setStatusBarColor(getResources().getColor(R.color.darker_blue,null));
-                        break;
-                    case 2:
-                        window.setStatusBarColor(getResources().getColor(R.color.darker_green,null));
-                        break;
-                    case 3:
-                        window.setStatusBarColor(getResources().getColor(R.color.darker_yellow,null));
-                        break;
-                }
-                DRAFTINGNUM = draftOrder.size();
-                break;
-            case "Locked In Random":
-                ArrayList<Fighter> randomFighters = new ArrayList<>(fighters);
-                Collections.shuffle(randomFighters);
-                for (int i = 0; i < NUMTEAMS; i++) {
-                    for (int j = 0; j < DRAFTINGNUM; j++) {
-                        Fighter tempFighter = randomFighters.get(0);
-                        randomFighters.remove(0);
-                        spDrafted.get(i).add(tempFighter);
-                    }
-                }
-                Log.d(TAG, "" + spDrafted);
-                goToGameplay();
-                break;
-            case "Columns":
-                for(int i = 0; i < 12; i++){
-                    spDrafted.get(0).add(fighters.get(i));
-                    spDrafted.get(0).add(fighters.get(12+i));
-                    spDrafted.get(0).add(fighters.get(24+i));
-                    spDrafted.get(0).add(fighters.get(36+i));
-
-                    spDrafted.get(1).add(fighters.get(11-i));
-                    spDrafted.get(1).add(fighters.get(23-i));
-                    spDrafted.get(1).add(fighters.get(35-i));
-                    spDrafted.get(1).add(fighters.get(47-i));
-                }
-                for(int i = 0; i < 12; i+=2){
-                    spDrafted.get(0).add(fighters.get(59-i));
-                    spDrafted.get(0).add(fighters.get(58-i));
-                    spDrafted.get(0).add(fighters.get(71-i));
-                    spDrafted.get(0).add(fighters.get(70-i));
-
-                    spDrafted.get(1).add(fighters.get(48+i));
-                    spDrafted.get(1).add(fighters.get(49+i));
-                    spDrafted.get(1).add(fighters.get(60+i));
-                    spDrafted.get(1).add(fighters.get(61+i));
-                }
-
-                for(int i = 0; i < 9; i++){
-                    spDrafted.get(0).add(fighters.get(72+i));
-                    spDrafted.get(1).add(fighters.get(81-i));
-                }
-
-                Log.d(TAG,spDrafted.get(0)+" team 0");
-                Log.d(TAG,spDrafted.get(1)+" team 1");
-                goToGameplay();
-                break;
-        }
-
-        fullFighters.addAll(fighters);
+        //Define sorted fighter arraylists
+        idSortedFighters.addAll(fighters);
         alphaSortedFighters.addAll(fighters);
         Collections.sort(alphaSortedFighters);
     }
 
-    public boolean onCreateOptionsMenu(Menu menu) {
-        Log.d(TAG,"onCreateOptionsMenu");
-        MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.change_view, menu);
-        inflater.inflate(R.menu.change_sort, menu);
-        inflater.inflate(R.menu.visibility, menu);
-        this.menu = menu;
-
-        return true;
+    //set up auto complete bar
+    private void initAutoComplete() {
+        autoCompleteFighters.addAll(fighters);
+        actv = findViewById(R.id.autoCompleteTextView);
+        actv.setThreshold(1);
+        actv.setTextColor(Color.parseColor("#FF7F00"));
+        actv.setOnFocusChangeListener(this::autoCompleteFocusChanged);
+        actv.setOnItemClickListener((parent, arg1, pos, id) -> confirmDraft((Fighter) parent.getItemAtPosition(pos)));
+        autoFighterAdapter = new AutoCompleteCharacterAdapter(this, autoCompleteFighters);
+        actv.setAdapter(autoFighterAdapter);
     }
-
-    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        Log.d(TAG, "onOptionsItemSelected");
-
-        if (item.getItemId() == R.id.action_eye) {
-            Log.d(TAG, "eye clicked");
-            eye = !eye;
-            if (eye) {
-                menu.getItem(2).setIcon(ContextCompat.getDrawable(this, R.drawable.eye_open));
-            } else {
-                menu.getItem(2).setIcon(ContextCompat.getDrawable(this, R.drawable.eye_close));
-            }
-            changeVisibilityOfDrafted();
-            return true;
-
-        } else if (item.getItemId() == R.id.action_sort) {
-            Log.d(TAG, "sort clicked");
-            alphaSort = !alphaSort;
-            if (alphaSort) {
-                menu.getItem(1).setIcon(ContextCompat.getDrawable(this, R.drawable.symb_1to9));
-            } else {
-                menu.getItem(1).setIcon(ContextCompat.getDrawable(this, R.drawable.symb_atoz));
-            }
-            changeOrderOfDrafted();
-            return true;
-
-        } else if (item.getItemId() == R.id.action_view) {
-            Log.d(TAG, "view clicked");
-            listView = !listView;
-            if (listView) {
-                menu.getItem(0).setIcon(ContextCompat.getDrawable(this, R.drawable.symb_list));
-                mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-            } else {
-                menu.getItem(0).setIcon(ContextCompat.getDrawable(this, R.drawable.symb_grid));
-                mRecyclerView.setLayoutManager(new GridLayoutManager(this, 3));
-            }
-            mRecyclerView.setAdapter(adapter);
-            adapter.notifyDataSetChanged();
-            return true;
-        }
-        return super.onOptionsItemSelected(item);
-    }
-
-    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
-    private void changeVisibilityOfDrafted() {
-        Log.d(TAG,"changeVisibilityOfDrafted");
-        Parcelable recyclerViewState;
-        recyclerViewState = Objects.requireNonNull(mRecyclerView.getLayoutManager()).onSaveInstanceState();
-        if (eye) {
-            fighters.clear();
-            if (alphaSort && alphaSortedFighters != null) changeVisibilityHelper(alphaSortedFighters);
-            else if (fullFighters != null) changeVisibilityHelper(fullFighters);
-        } else eyeClosed();
-        mRecyclerView.getLayoutManager().onRestoreInstanceState(recyclerViewState);
-    }
-
-    void changeVisibilityHelper(ArrayList<Fighter> arrayList){
-        fighters.addAll(arrayList);
-        ArrayList<Integer> draftedPos = new ArrayList<>();
-        for (int i = 0; i < NUMTEAMS; i++)
-            for (Fighter fighter : spDrafted.get(i)) {
-                arrayList.indexOf(fighter);
-                draftedPos.add(arrayList.indexOf(fighter));
-            }
-        Collections.sort(draftedPos);
-        for (int pos : draftedPos)
-            adapter.notifyItemInserted(pos);
-    }
-
-    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
-    private void changeOrderOfDrafted() {
-        Log.d(TAG, "changeOrderOfDrafted");
-        if (alphaSort) {
-            fighters.clear();
-            fighters.addAll(alphaSortedFighters);
-            if (!eye) {
-                eyeClosed();
-            }
-        } else {
-            fighters.clear();
-            fighters.addAll(fullFighters);
-            if (!eye) {
-                eyeClosed();
-            }
-        }
-        adapter.notifyDataSetChanged();
-    }
-
-    private void eyeClosed() {
-        Log.d(TAG,"eyeClosed");
-        //resetPositions must be called multiple times
-        for (int i = 0; i < NUMTEAMS; i++) {
-            Log.d(TAG,"EyeClosed spDrafted:"+spDrafted.toString());
-            for (Fighter fighter : spDrafted.get(i)) {
-                int pos = fighters.indexOf(fighter);
-                fighters.remove(fighter);
-                adapter.notifyItemRemoved(pos);
-
-            }
-        }
-        Log.d(TAG,"EyeClosed fighters:"+fighters);
-    }
-
-    void nextTeam() {
-        Log.d(TAG,"nextTeam");
-        if (draftOrderIndex < draftOrder.size() - 1) {
-            draftOrderIndex++;
-            spTeam = draftOrder.get(draftOrderIndex);
-        } else {
-            spTeam = 0;
-            draftOrderIndex = 0;
-        }
-        changeBarColor();
-    }
-
-    void prevTeam() {
-        Log.d(TAG,"prevTeam");
-        if (draftOrderIndex > 0) {
-            draftOrderIndex -= 1;
-        } else {
-            draftOrderIndex = draftOrder.size() - 1;
-        }
-        spTeam = draftOrder.get(draftOrderIndex);
-        changeBarColor();
-    }
-
-
-    void changeBarColor() {
-        Log.d(TAG,"changeBarColor");
-        Window window = getWindow();
-        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-        switch(spTeam){
-        case 0:
-            window.setStatusBarColor(getResources().getColor(R.color.darker_red,null));
-            break;
-        case 1:
-            window.setStatusBarColor(getResources().getColor(R.color.darker_blue,null));
-            break;
-        case 2:
-            window.setStatusBarColor(getResources().getColor(R.color.darker_green,null));
-            break;
-        case 3:
-            window.setStatusBarColor(getResources().getColor(R.color.darker_yellow,null));
-            break;
-        }
-
-    }
-
-    int getPrevTeam(){
-        Log.d(TAG,"getPrevTeam");
-        if(draftOrderIndex > 0){
-            return draftOrder.get(draftOrderIndex -1);
-        }
-        else{
-            return 0;
-        }
-    }
-
-    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
-    public void confirmDraft(Fighter fighter) {
-        Log.d(TAG,"confirmDraft");
-        final Fighter temp = fighter;
-        //undo
-        if(lastDrafted.size() != 0 && lastDrafted.get(lastDrafted.size()-1) == fighter){
-            Parcelable recyclerViewState;
-            recyclerViewState = Objects.requireNonNull(mRecyclerView.getLayoutManager()).onSaveInstanceState();
-            Fighter removedFighter = spDrafted.get(getPrevTeam()).get(spDrafted.get(getPrevTeam()).size()-1);
-            spDrafted.get(getPrevTeam()).remove(spDrafted.get(getPrevTeam()).size()-1);
-            adapter.notifyItemChanged(fighters.indexOf(removedFighter));
-            mRecyclerView.getLayoutManager().onRestoreInstanceState(recyclerViewState);
-            lastDrafted.remove(lastDrafted.size()-1);
-            prevTeam();
-        }else if(notDrafted(fighter)){
-            AlertDialog.Builder builder = new AlertDialog.Builder(DraftActivity.this);
-            builder.setCancelable(true);
-            builder.setIcon(fighter.getImageId());
-            builder.setTitle(Html.fromHtml("<font color='#FFFFFF'>Are you sure you want to draft <b>\n" + fighter.getName() + "</b>?</font>",63));
-
-            builder.setPositiveButton("Accept", (dialog, which) -> {
-                editText.setText("");
-                draftCharacter(temp);
-                dialog.dismiss();
-            });
-            builder.setNegativeButton("Reject", (dialog, which) -> dialog.dismiss());
-
-            AlertDialog alert = builder.create();
-            alert.show();
-            Button confirmButton = alert.getButton(DialogInterface.BUTTON_POSITIVE);
-            Button rejectButton = alert.getButton(DialogInterface.BUTTON_NEGATIVE);
-            switch (spTeam){
-                case 0:
-                    alert.getWindow().setBackgroundDrawableResource(R.color.darker_red);
-                    confirmButton.setTextColor(getResources().getColor(R.color.white,null));
-                    rejectButton.setTextColor(getResources().getColor(R.color.white,null));
-                    break;
-                case 1:
-                    alert.getWindow().setBackgroundDrawableResource(R.color.darker_blue);
-                    confirmButton.setTextColor(getResources().getColor(R.color.white,null));
-                    rejectButton.setTextColor(getResources().getColor(R.color.white,null));
-                    break;
-                case 2:
-                    alert.getWindow().setBackgroundDrawableResource(R.color.darker_green);
-                    confirmButton.setTextColor(getResources().getColor(R.color.white,null));
-                    rejectButton.setTextColor(getResources().getColor(R.color.white,null));
-                    break;
-                case 3:
-                    alert.getWindow().setBackgroundDrawableResource(R.color.darker_yellow);
-                    confirmButton.setTextColor(getResources().getColor(R.color.white,null));
-                    rejectButton.setTextColor(getResources().getColor(R.color.white,null));
-
-                    break;
-            }
-        }
-    }
-
-    private boolean notDrafted(Fighter someFighter) {
-        for(int i = 0; i < NUMTEAMS; i++){
-            for(Fighter fighter:lastDrafted){
-                if(someFighter.getName().equals(fighter.getName())){
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
-    void draftCharacter(Fighter fighter) {
-        Log.d(TAG,"draftCharacter "+fighter.getName());
-        Log.d(TAG,"draftOrder: "+draftOrder.toString()+" draftOrderIndex:"+ draftOrderIndex);
-        hideKeyboard(this);
-        lastDrafted.add(fighter);
-
-        spDrafted.get(spTeam).add(fighter);
-        if(!eye){
-            adapter.notifyItemRemoved(fighters.indexOf(fighter));
-            fighters.remove(fighter);
-        }
-        if(eye)
-            adapter.notifyItemChanged(fighters.indexOf(fighter));
-        nextTeam();
-
-        Log.d(TAG,spDrafted+" "+DRAFTINGNUM);
-        //if all teams are the right length go to gameplay
-        boolean flag = true;
-        if(GAMEMODE.equals("Draft As You Go")){
-            flag = lastDrafted.size()-indexOfRecentRandom-1 == draftOrder.size();
-        }else {
-            for (int i = 0; i < spDrafted.size(); i++) {
-                if (spDrafted.get(i).size() < DRAFTINGNUM) {
-                    Log.d(TAG, "Team " + i);
-                    flag = false;
-                    break;
-                }
-            }
-        }
-        if(flag){
-            goToGameplay();
-        }
-    }
-
-    Fighter getFighter(String name) {
-        Log.d(TAG,"getFighter "+name);
-        for(Fighter someFighter:fighters){
-            if(someFighter.getName().equals(name)) {
-                return someFighter;
-            }
-        }
-        return null;
-    }
-
-    private void goToGameplay() {
-        Log.d(TAG,"Going to Gameplay");
-
-        ArrayList<Fighter> remainders = ((ManagingApplication) getApplicationContext()).remainders;
-        if(remainders == null) {
-            remainders = new ArrayList<>(fighters);
-        }
-
-        switch(NUMTEAMS){
-            case 4:
-                remainders.removeAll(spDrafted.get(3));
-            case 3:
-                remainders.removeAll(spDrafted.get(2));
-            case 2:
-                remainders.removeAll(spDrafted.get(0));
-                remainders.removeAll(spDrafted.get(1));
-        }
-
-        if(PREVACTIVITY.equals("MainActivity")) {
-            Intent intent = new Intent(this, GamePlayActivity.class);
-            startActivity(intent);
-        }
-        else{
-            onBackPressed();
-        }
-    }
-
 
     private void initFighters(){
         if(((ManagingApplication) getApplicationContext()).allFighters == null) {
@@ -627,51 +220,423 @@ public class DraftActivity extends AppCompatActivity implements DraftRecyclerAda
     }
 
     private void initRecyclerView(){
-        Log.d(TAG, "initRecyclerView: init recyclerview.");
-
         mRecyclerView = findViewById(R.id.draftRecyclerView);
         adapter = new DraftRecyclerAdapter(this, fighters, this);
-        mRecyclerView.setLayoutManager(new LinearLayoutManager(mContext, LinearLayoutManager.VERTICAL, false));
+        mRecyclerView.setLayoutManager(new GridLayoutManager(this, 6)); //should be 3
         mRecyclerView.setAdapter(adapter);
         mRecyclerView.setHasFixedSize(true);
-
-        ArrayList<Fighter> autoCompleteFighters = new ArrayList<>(fighters);
-
-        editText = findViewById(R.id.autoCompleteTextView);
-        AutoCompleteCharacterAdapter autoAdapter = new AutoCompleteCharacterAdapter(this, autoCompleteFighters);
-        editText.setAdapter(autoAdapter);
-        adapter.notifyDataSetChanged();
     }
 
-    public static void hideKeyboard(Activity activity) {
-        InputMethodManager imm = (InputMethodManager) activity.getSystemService(Activity.INPUT_METHOD_SERVICE);
-        //Find the currently focused view, so we can grab the correct window token from it.
-        View view = activity.getCurrentFocus();
-        //If no view currently has focus, create a new one, just so we can grab a window token from it
-        if (view == null) {
-            view = new View(activity);
+    //Different setups for different game modes
+    private void initGamemodes() {
+        Intent intent = this.getIntent();
+        prevActivity = intent.getStringExtra("prevActivity");
+        switch (gameMode) {
+            case "Draft As You Go":
+                if(spDrafted.get(0).size() != 0) {
+                    draftOrder = intent.getIntegerArrayListExtra("draftOrder");
+                }if(spDrafted.get(0).size() == 0 || draftOrder == null){
+                if (numTeams == 2)
+                    draftOrder = new ArrayList<>(Arrays.asList(0, 0, 1, 1));
+                else if (numTeams == 3)
+                    draftOrder = new ArrayList<>(Arrays.asList(0, 0, 1, 1, 2, 2));
+                else if (numTeams == 4)
+                    draftOrder = new ArrayList<>(Arrays.asList(0, 0, 1, 1, 2, 2, 3, 3));
+
+            }
+                draftOrderIndex = 0;
+
+                //Set window bar colour to the drafting team
+                Window window = getWindow();
+                window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+                switch (draftOrder.get(0)){
+                    case 0:
+                        window.setStatusBarColor(getResources().getColor(R.color.darker_red,null));
+                        break;
+                    case 1:
+                        window.setStatusBarColor(getResources().getColor(R.color.darker_blue,null));
+                        break;
+                    case 2:
+                        window.setStatusBarColor(getResources().getColor(R.color.darker_green,null));
+                        break;
+                    case 3:
+                        window.setStatusBarColor(getResources().getColor(R.color.darker_yellow,null));
+                        break;
+                }
+                numToDraft = draftOrder.size();
+                break;
+
+            //draft all fighters before starting the game.
+            case "Draft Up Front":
+                if (numTeams == 2)
+                    draftOrder = new ArrayList<>(Arrays.asList(0, 1));
+                else if (numTeams == 3)
+                    draftOrder = new ArrayList<>(Arrays.asList(0, 1, 2, 2, 1, 0));
+                else if (numTeams == 4)
+                    draftOrder = new ArrayList<>(Arrays.asList(0, 1, 2, 3, 3, 2, 1, 0));
+                break;
+
+            //Randomly select fighters to add to each team.
+            case "Locked In Random":
+                ArrayList<Fighter> randomFighters = new ArrayList<>(fighters);
+                Collections.shuffle(randomFighters);
+                for (int i = 0; i < numTeams; i++) {
+                    for (int j = 0; j < numToDraft; j++) {
+                        Fighter tempFighter = randomFighters.get(0);
+                        randomFighters.remove(0);
+                        spDrafted.get(i).add(tempFighter);
+                    }
+                }
+                goToGameplay();
+                break;
+
+            //hard coded values for echos visible, no mii fighters, kazuya patch
+            case "Columns":
+                for(int i = 0; i < 12; i++){
+                    spDrafted.get(0).add(fighters.get(i));
+                    spDrafted.get(0).add(fighters.get(12+i));
+                    spDrafted.get(0).add(fighters.get(24+i));
+                    spDrafted.get(0).add(fighters.get(36+i));
+
+                    spDrafted.get(1).add(fighters.get(11-i));
+                    spDrafted.get(1).add(fighters.get(23-i));
+                    spDrafted.get(1).add(fighters.get(35-i));
+                    spDrafted.get(1).add(fighters.get(47-i));
+                }
+                for(int i = 0; i < 12; i+=2){
+                    spDrafted.get(0).add(fighters.get(59-i));
+                    spDrafted.get(0).add(fighters.get(58-i));
+                    spDrafted.get(0).add(fighters.get(71-i));
+                    spDrafted.get(0).add(fighters.get(70-i));
+
+                    spDrafted.get(1).add(fighters.get(48+i));
+                    spDrafted.get(1).add(fighters.get(49+i));
+                    spDrafted.get(1).add(fighters.get(60+i));
+                    spDrafted.get(1).add(fighters.get(61+i));
+                }
+
+                for(int i = 0; i < 9; i++){
+                    spDrafted.get(0).add(fighters.get(72+i));
+                    spDrafted.get(1).add(fighters.get(81-i));
+                }
+                goToGameplay();
+                break;
         }
-        imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
     }
 
-    @Override
-    public void onBackPressed(){
-        if(lastDrafted.size() > 0 && PREVACTIVITY.equals("MainActivity")){
-            Log.d(TAG,"Undoing "+lastDrafted.get(lastDrafted.size()-1));
-            confirmDraft(lastDrafted.get(lastDrafted.size()-1));
+    private void autoCompleteFocusChanged(View v, Boolean hasFocus) {
+        auto = hasFocus;
+        if(auto) {
+            mRecyclerView.setAlpha((float) 0.4);
         }
-        else{
-            Log.d(TAG,"Back to GamePlay?");
-            super.onBackPressed();
+        else {
+            mRecyclerView.setAlpha(1);
+            actv.setText("");
+            actv.dismissDropDown();
+            hideKeyboard(this);
         }
+        autoFighterAdapter.notifyDataSetChanged();
+        Log.d(TAG,"auto:"+auto);
+    }
+
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.change_view, menu);
+        inflater.inflate(R.menu.change_sort, menu);
+        inflater.inflate(R.menu.visibility, menu);
+        this.menu = menu;
+        return true;
     }
 
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        //the eye button hides all drafted fighters
+        if (item.getItemId() == R.id.action_eye) {
+            showDrafted = !showDrafted;
+            if (showDrafted)
+                menu.getItem(2).setIcon(ContextCompat.getDrawable(this, R.drawable.eye_open));
+            else
+                menu.getItem(2).setIcon(ContextCompat.getDrawable(this, R.drawable.eye_close));
+
+            changeVisibilityOfDrafted();
+            return true;
+        //the sort button switches between sort by order and sort by release date. The symbol is what will be switched to
+        } else if (item.getItemId() == R.id.action_sort) {
+            alphaSort = !alphaSort;
+            if (alphaSort)
+                menu.getItem(1).setIcon(ContextCompat.getDrawable(this, R.drawable.symb_1to9));
+            else
+                menu.getItem(1).setIcon(ContextCompat.getDrawable(this, R.drawable.symb_atoz));
+            changeOrderOfDrafted();
+            return true;
+
+            //switch between grid view and list view
+        } else if (item.getItemId() == R.id.action_view) {
+            listView = !listView;
+            if (listView) {
+                menu.getItem(0).setIcon(ContextCompat.getDrawable(this, R.drawable.symb_grid));
+                mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+            } else {
+                menu.getItem(0).setIcon(ContextCompat.getDrawable(this, R.drawable.symb_list));
+                mRecyclerView.setLayoutManager(new GridLayoutManager(this, 6)); //should be 3
+            }
+            mRecyclerView.setAdapter(adapter);
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    private void changeVisibilityOfDrafted() {
+        Parcelable recyclerViewState;
+        recyclerViewState = Objects.requireNonNull(mRecyclerView.getLayoutManager()).onSaveInstanceState();
+        if (showDrafted) {
+            fighters.clear();
+            if (alphaSort && alphaSortedFighters != null) changeVisibilityHelper(alphaSortedFighters);
+            else if (idSortedFighters != null) changeVisibilityHelper(idSortedFighters);
+        } else eyeClosed();
+        mRecyclerView.getLayoutManager().onRestoreInstanceState(recyclerViewState);
+    }
+
+    void changeVisibilityHelper(ArrayList<Fighter> arrayList){
+        fighters.addAll(arrayList);
+        ArrayList<Integer> draftedPos = new ArrayList<>();
+        for (int i = 0; i < numTeams; i++)
+            for (Fighter fighter : spDrafted.get(i)) {
+                arrayList.indexOf(fighter);
+                draftedPos.add(arrayList.indexOf(fighter));
+            }
+        Collections.sort(draftedPos);
+        for (int pos : draftedPos)
+            adapter.notifyItemInserted(pos);
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
+    private void changeOrderOfDrafted() {
+        Log.d(TAG, "changeOrderOfDrafted");
+        if (alphaSort) {
+            fighters.clear();
+            fighters.addAll(alphaSortedFighters);
+            if (!showDrafted) {
+                eyeClosed();
+            }
+        } else {
+            fighters.clear();
+            fighters.addAll(idSortedFighters);
+            if (!showDrafted) {
+                eyeClosed();
+            }
+        }
+        adapter.notifyItemRangeChanged(0,15);
+    }
+
+    //remove all drafted fighters from fighters and notify the adapter
+    private void eyeClosed() {
+        for (int i = 0; i < numTeams; i++) {
+            for (Fighter fighter : spDrafted.get(i)) {
+                int pos = fighters.indexOf(fighter);
+                fighters.remove(fighter);
+                adapter.notifyItemRemoved(pos);
+            }
+        }
+    }
+
+    void nextTeam() {
+        if (draftOrderIndex < draftOrder.size() - 1) {
+            draftOrderIndex++;
+        } else {
+            draftOrderIndex = 0;
+        }
+        changeBarColor();
+    }
+
+    void prevTeam() {
+        if (draftOrderIndex > 0) {
+            draftOrderIndex -= 1;
+        } else {
+            draftOrderIndex = draftOrder.size() - 1;
+        }
+        changeBarColor();
+    }
+
+    void changeBarColor() {
+        Window window = getWindow();
+        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+        switch(draftOrder.get(draftOrderIndex)){
+        case 0:
+            window.setStatusBarColor(getResources().getColor(R.color.darker_red,null));
+            break;
+        case 1:
+            window.setStatusBarColor(getResources().getColor(R.color.darker_blue,null));
+            break;
+        case 2:
+            window.setStatusBarColor(getResources().getColor(R.color.darker_green,null));
+            break;
+        case 3:
+            window.setStatusBarColor(getResources().getColor(R.color.darker_yellow,null));
+            break;
+        }
+    }
+
+    int getPrevTeam(){
+        if(draftOrderIndex > 0){
+            return draftOrder.get(draftOrderIndex -1);
+        }
+        else{
+            return draftOrder.get(0);
+        }
+    }
+
+    public void confirmDraft(Fighter fighter) {
+        final Fighter temp = fighter;
+
+        if(notDrafted(fighter)){
+            AlertDialog.Builder builder = new AlertDialog.Builder(DraftActivity.this);
+            builder.setCancelable(true);
+            builder.setIcon(fighter.getImageId());
+            builder.setTitle(Html.fromHtml("<font color='#FFFFFF'>Are you sure you want to draft <b>\n" + fighter.getName() + "</b>?</font>",63));
+            builder.setPositiveButton("Accept", (dialog, which) -> {
+                draftFighter(temp);
+                dialog.dismiss();
+                actv.setFocusable(false);
+                actv.setFocusableInTouchMode(true);
+                actv.setCursorVisible(false);
+                actv.clearFocus();
+            });
+            builder.setNegativeButton("Reject", (dialog, which) -> {
+                dialog.dismiss();
+                actv.setFocusable(false);
+                actv.setFocusableInTouchMode(true);
+                actv.setCursorVisible(false);
+                actv.clearFocus();
+            });
+            builder.setOnDismissListener(dialog -> actv.setText(""));
+            AlertDialog alert = builder.create();
+            alert.show();
+            Button confirmButton = alert.getButton(DialogInterface.BUTTON_POSITIVE);
+            Button rejectButton = alert.getButton(DialogInterface.BUTTON_NEGATIVE);
+            switch (draftOrder.get(draftOrderIndex)){
+                case 0:
+                    alert.getWindow().setBackgroundDrawableResource(R.color.darker_red);
+                    confirmButton.setTextColor(getResources().getColor(R.color.white,null));
+                    rejectButton.setTextColor(getResources().getColor(R.color.white,null));
+                    break;
+                case 1:
+                    alert.getWindow().setBackgroundDrawableResource(R.color.darker_blue);
+                    confirmButton.setTextColor(getResources().getColor(R.color.white,null));
+                    rejectButton.setTextColor(getResources().getColor(R.color.white,null));
+                    break;
+                case 2:
+                    alert.getWindow().setBackgroundDrawableResource(R.color.darker_green);
+                    confirmButton.setTextColor(getResources().getColor(R.color.white,null));
+                    rejectButton.setTextColor(getResources().getColor(R.color.white,null));
+                    break;
+                case 3:
+                    alert.getWindow().setBackgroundDrawableResource(R.color.darker_yellow);
+                    confirmButton.setTextColor(getResources().getColor(R.color.white,null));
+                    rejectButton.setTextColor(getResources().getColor(R.color.white,null));
+                    break;
+            }
+        }else if(lastDrafted.size() != 0 && lastDrafted.get(lastDrafted.size()-1) == fighter){
+            //Undo draft if it is the most recent
+            Parcelable recyclerViewState;
+            recyclerViewState = Objects.requireNonNull(mRecyclerView.getLayoutManager()).onSaveInstanceState();
+            Fighter removedFighter = spDrafted.get(getPrevTeam()).get(spDrafted.get(getPrevTeam()).size()-1);
+            spDrafted.get(getPrevTeam()).remove(spDrafted.get(getPrevTeam()).size()-1);
+            adapter.notifyItemChanged(fighters.indexOf(removedFighter));
+            mRecyclerView.getLayoutManager().onRestoreInstanceState(recyclerViewState);
+            lastDrafted.remove(lastDrafted.size()-1);
+            prevTeam();
+        }
+    }
+
+    //check if the fighter has been drafted
+    private boolean notDrafted(Fighter someFighter) {
+        for(Fighter fighter:lastDrafted){
+            if(someFighter.getName().equals(fighter.getName()))
+                return false;
+        }
+        return true;
+    }
+
+    void draftFighter(Fighter fighter) {
+        if(!fighter.getName().equals("Random")) {
+            lastDrafted.add(fighter);
+            spDrafted.get(draftOrder.get(draftOrderIndex)).add(fighter);
+            if (!showDrafted) {
+                adapter.notifyItemRemoved(fighters.indexOf(fighter));
+                fighters.remove(fighter);
+            }
+            else
+                adapter.notifyItemChanged(fighters.indexOf(fighter));
+            nextTeam();
+
+            //if all teams are the right length go to gameplay
+            boolean flag = true;
+            if (gameMode.equals("Draft As You Go"))
+                flag = lastDrafted.size() - indexOfRecentRandom - 1 == draftOrder.size();
+            else
+                for (int i = 0; i < spDrafted.size(); i++)
+                    if (spDrafted.get(i).size() < numToDraft) {
+                        flag = false;
+                        break;
+                    }
+            if (flag)
+                goToGameplay();
+        }
+    }
+
+    private void goToGameplay() {
+        ArrayList<Fighter> fightersNotDrafted = ((ManagingApplication) getApplicationContext()).remainders;
+        if(fightersNotDrafted == null)
+            fightersNotDrafted = new ArrayList<>(fighters);
+
+        switch(numTeams){
+            case 4:
+                fightersNotDrafted.removeAll(spDrafted.get(3));
+            case 3:
+                fightersNotDrafted.removeAll(spDrafted.get(2));
+            case 2:
+                fightersNotDrafted.removeAll(spDrafted.get(0));
+                fightersNotDrafted.removeAll(spDrafted.get(1));
+        }
+
+        //check if we can go back to gameplay activity or if we have to call a new intent
+        if(prevActivity != null && prevActivity.equals("MainActivity")) {
+            Intent intent = new Intent(this, GamePlayActivity.class);
+            startActivity(intent);
+        }
+        else{
+            Log.d(TAG,"goToGameplay");
+            super.onBackPressed();
+        }
+    }
+
+    //If keyboard is open close keyboard.
+    public void hideKeyboard(Activity activity) {
+        if(this.getWindowManager().getCurrentWindowMetrics().getWindowInsets().isVisible(WindowInsets.Type.ime())) {
+            InputMethodManager imm = (InputMethodManager) activity.getSystemService(Activity.INPUT_METHOD_SERVICE);
+            imm.toggleSoftInput(InputMethodManager.HIDE_IMPLICIT_ONLY, 0);
+        }
+    }
+
+    //Undo draft
+    @Override
+    public void onBackPressed(){
+        if(lastDrafted.size() > 0 && !lastDrafted.get(lastDrafted.size() - 1).getName().equals("Random"))
+            confirmDraft(lastDrafted.get(lastDrafted.size()-1));
+        else if(prevActivity.equals("MainActivity"))
+            super.onBackPressed();
+    }
+
+    @Override
     public void onFighterClick(int position) {
-        Log.d(TAG,"On Fighter Click: "+ position);
-        confirmDraft(fighters.get(position));
+        if(!auto)
+            confirmDraft(fighters.get(position));
+        else
+            actv.clearFocus();
     }
 
     boolean getListView(){return this.listView;}
 }
+

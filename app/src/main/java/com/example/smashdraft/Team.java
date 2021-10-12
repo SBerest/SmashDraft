@@ -25,21 +25,21 @@ public class Team implements Serializable, Comparable<Team>  {
     Team(ArrayList<Fighter> fighters, int team, SharedPreferences sharedPreferences) {
         this.team = team;
         this.fighters = fighters;
-        String teamSizeString = "NUMT0";
-        if(team == 1) teamSizeString = "NUMT1";
-        else if(team == 2) teamSizeString = "NUMT2";
-        else if(team == 3) teamSizeString = "NUMT3";
+        String teamSizeString = "numRed";
+        if(team == 1) teamSizeString = "numBlue";
+        else if(team == 2) teamSizeString = "numGreen";
+        else if(team == 3) teamSizeString = "numYellow";
 
         this.teamSize = sharedPreferences.getInt(teamSizeString,2);
+        Log.d(TAG,teamSize+"");
         this.pointers = new int[this.teamSize];
         this.mNumRandoms = sharedPreferences.getInt("numRandoms",2);
         boolean randomAtEnd = sharedPreferences.getBoolean("randomEnd",true);
         this.mNumSkips = sharedPreferences.getInt("numSkips",0);
-        this.mGameMode = sharedPreferences.getString("gameMOde","Draft As You Go");;
+        this.mGameMode = sharedPreferences.getString("gameMode","Draft As You Go");;
 
         if(mNumRandoms == 0) randomLocation = 0;
         randomLocation = randomAtEnd? 2 : 1;
-        Log.d(TAG,"Fighters = "+fighters);
         if(randomLocation != 1)
             if(mGameMode.equals("Columns")){
                 setPointersColumns();
@@ -98,26 +98,12 @@ public class Team implements Serializable, Comparable<Team>  {
                 pointers[0] = -1;
         }
     }
-    public int[] getPointers(){
-        return this.pointers;
-    }
-    @Override
-    public String toString() {
-        StringBuilder toRet = new StringBuilder();
-        for(Fighter fighter:fighters){
-            toRet.append(fighter.getName());
-            toRet.append(" | ");
-        }
-        return toRet.toString();
-    }
 
     public int getTeamSize(){
         return this.teamSize;
     }
 
     public int getImageId(int num) {
-        Log.d(TAG, "getImageId Fighters:"+fighters);
-        Log.d(TAG, "getImageId Pointers:"+Arrays.toString(pointers));
         if(pointers[num] == -1){
             return R.drawable.img_00_question;
         }
@@ -143,15 +129,6 @@ public class Team implements Serializable, Comparable<Team>  {
         this.wins++;
     }
 
-    public void skip(){
-        if(mNumSkips > 0){
-            mNumSkips -= 1;
-            incWin();
-            this.losses = 0;
-        }
-        else Log.d(TAG,"Ran out of skips.");
-    }
-
     public void incLoss() {
         this.losses++;
     }
@@ -166,6 +143,17 @@ public class Team implements Serializable, Comparable<Team>  {
 
     public ArrayList<Fighter> getFighters(){
         return this.fighters;
+    }
+
+    public Boolean skip(){
+        if(mNumSkips > 0){
+            Log.d(TAG,"Skip:"+mNumSkips);
+            mNumSkips -= 1;
+            this.wins++;
+            this.losses = 0;
+            return true;
+        }
+        return false;
     }
 
     public void updatePointersFromWin() {

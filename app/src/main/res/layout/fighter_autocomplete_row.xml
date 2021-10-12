@@ -4,8 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/parent_layout"
     android:layout_width="match_parent"
-    android:layout_height="50dp"
-    android:background="@color/black">
+    android:layout_height="65dp"
+    android:background="@drawable/custom_border">
 
     <ImageView
         android:id="@+id/autoCharacterImage"
@@ -23,7 +23,6 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
-        android:layout_marginLeft="8dp"
         android:text="@string/charactername"
         android:textColor="@color/white"
         android:textSize="30sp"

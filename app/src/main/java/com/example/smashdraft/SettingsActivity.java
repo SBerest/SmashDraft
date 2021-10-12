@@ -1,14 +1,13 @@
 package com.example.smashdraft;
-
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceActivity;
 import android.util.Log;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 public class SettingsActivity extends AppCompatActivity{
-    String TAG = "SettingsActivity";
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (savedInstanceState == null){
@@ -19,7 +18,7 @@ public class SettingsActivity extends AppCompatActivity{
     @Override
     public void onBackPressed(){
         SharedPreferences sharedPreferences = this.getSharedPreferences("settings", Context.MODE_PRIVATE);
-
+        String TAG = "Hi";
         String gameMode = sharedPreferences.getString("gameMode","Draft As You Go");
         Log.d(TAG,"gameMode: "+gameMode);
         int numTeams = sharedPreferences.getInt("numTeams",4);
