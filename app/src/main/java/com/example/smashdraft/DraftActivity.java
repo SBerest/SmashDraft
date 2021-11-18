@@ -214,6 +214,7 @@ public class DraftActivity extends AppCompatActivity implements DraftRecyclerAda
             allFighters.add(new Fighter(R.drawable.img_80_sephiroth, "Sephiroth"));
             allFighters.add(new Fighter(R.drawable.img_81_pyra, "Pyra and Mythra"));
             allFighters.add(new Fighter(R.drawable.img_82_kazuya, "Kazuya"));
+            allFighters.add(new Fighter(R.drawable.img_83_sora, "Sora"));
         }
         else fighters.clear();
         fighters.addAll(((ManagingApplication) getApplicationContext()).allFighters);

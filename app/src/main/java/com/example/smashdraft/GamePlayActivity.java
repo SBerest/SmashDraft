@@ -49,7 +49,7 @@ public class GamePlayActivity extends AppCompatActivity implements View.OnClickL
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_gameplay);
+        setContentView(R.layout.activity_gameplay2);
 
         SharedPreferences sharedPreferences = this.getSharedPreferences("settings", Context.MODE_PRIVATE);
         mGameMode = sharedPreferences.getString("gameMode","Draft As You Go");
@@ -81,6 +81,7 @@ public class GamePlayActivity extends AppCompatActivity implements View.OnClickL
             skip_button.setOnClickListener(this);
         }
 
+        /* //TODO convert to new formatting
         skip0 = findViewById(R.id.skip0);
         skip1 = findViewById(R.id.skip1);
         skip2 = findViewById(R.id.skip2);
@@ -96,7 +97,7 @@ public class GamePlayActivity extends AppCompatActivity implements View.OnClickL
                 skip0.setVisibility(View.VISIBLE);
                 skip1.setVisibility(View.VISIBLE);
                 skip2.setVisibility(View.VISIBLE);
-        }
+        }*/
 
         win_button = findViewById(R.id.win_button);
         win_button.setOnClickListener(this);
@@ -194,6 +195,7 @@ public class GamePlayActivity extends AppCompatActivity implements View.OnClickL
     }
 
     private void updateSkipImages(){
+        /*
         switch (focusTeam.getSkips()){
             case 3:
                 if(skip0.getVisibility() != View.GONE) skip0.setVisibility(View.VISIBLE);
@@ -233,10 +235,13 @@ public class GamePlayActivity extends AppCompatActivity implements View.OnClickL
         }
         if(skip0.getVisibility() == View.VISIBLE) skip0.setColorFilter(teamColor, PorterDuff.Mode.MULTIPLY);
         if(skip1.getVisibility() == View.VISIBLE) skip1.setColorFilter(teamColor, PorterDuff.Mode.MULTIPLY);
-        if(skip2.getVisibility() == View.VISIBLE) skip2.setColorFilter(teamColor, PorterDuff.Mode.MULTIPLY);
+        if(skip2.getVisibility() == View.VISIBLE) skip2.setColorFilter(teamColor, PorterDuff.Mode.MULTIPLY); TODO convert to new formatting
+
+         */
     }
 
     private void updateLoseImage(){
+    /*
         this.win_counter.setText(getString(R.string.winString,focusTeam.getWins()));
         switch (focusTeam.getLosses()) {
             case 0:
@@ -266,11 +271,14 @@ public class GamePlayActivity extends AppCompatActivity implements View.OnClickL
                 this.loss_counter.setColorFilter(Color.GREEN, PorterDuff.Mode.MULTIPLY);
                 break;
         }
+         TODO convert to new formatting */
     }
 
     private void updateWins(Team team) {
+        /*
         if(team == focusTeam)
             win_counter.setText(getString(R.string.winString,focusTeam.getWins()));
+            TODO convert to new formatting */
 
         if(team.getWins() < mNumWins) {
             team.updatePointersFromWin();

@@ -61,7 +61,7 @@ public class GamePlayRecyclerAdapter extends RecyclerView.Adapter<GamePlayRecycl
     @NonNull
     @Override
     public GamePlayViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int position) {
-        View itemView = LayoutInflater.from(viewGroup.getContext()).inflate(R.layout.team_cell, viewGroup, false);
+        View itemView = LayoutInflater.from(viewGroup.getContext()).inflate(R.layout.team_cell2, viewGroup, false);
 
         ViewGroup.LayoutParams layoutParams = itemView.getLayoutParams();
         layoutParams.height = (int) (viewGroup.getHeight() * 0.25);
