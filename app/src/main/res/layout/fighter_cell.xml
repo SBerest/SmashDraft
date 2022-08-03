@@ -15,7 +15,7 @@
         app:layout_constraintEnd_toStartOf="@id/characterName"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
-        tools:srcCompat="@drawable/img_01_mario" />
+        tools:srcCompat="@drawable/img_01_mario"/>
 
     <TextView
         android:id="@+id/characterName"

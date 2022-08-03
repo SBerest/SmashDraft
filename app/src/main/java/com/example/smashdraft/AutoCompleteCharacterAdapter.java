@@ -70,9 +70,11 @@ public class AutoCompleteCharacterAdapter extends ArrayAdapter<Fighter>{
             } else{
                 String filterPattern = constraint.toString().toLowerCase().trim();
                 for(Fighter item: mFighters){
-                    if(item.getName().toLowerCase().contains(filterPattern)){
-                        suggestions.add(item);
-                    }
+                    for(String word:item.getName().toLowerCase().split(" "))
+                        if(word.startsWith(filterPattern)){
+                            suggestions.add(item);
+                            break;
+                        }
                 }
             }
             results.values = suggestions;

@@ -10,13 +10,6 @@ import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
-import androidx.annotation.RequiresApi;
-import androidx.core.content.ContextCompat;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
 import android.text.Html;
 import android.util.Log;
 import android.view.Menu;
@@ -30,10 +23,18 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 
+import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Objects;
+import java.util.stream.IntStream;
 
 public class DraftActivity extends AppCompatActivity implements DraftRecyclerAdapter.onFighterListener {
     private static final String TAG = "Draft Activity";
@@ -235,15 +236,16 @@ public class DraftActivity extends AppCompatActivity implements DraftRecyclerAda
             case "Draft As You Go":
                 if(spDrafted.get(0).size() != 0) {
                     draftOrder = intent.getIntegerArrayListExtra("draftOrder");
-                }if(spDrafted.get(0).size() == 0 || draftOrder == null){
-                if (numTeams == 2)
-                    draftOrder = new ArrayList<>(Arrays.asList(0, 0, 1, 1));
-                else if (numTeams == 3)
-                    draftOrder = new ArrayList<>(Arrays.asList(0, 0, 1, 1, 2, 2));
-                else if (numTeams == 4)
-                    draftOrder = new ArrayList<>(Arrays.asList(0, 0, 1, 1, 2, 2, 3, 3));
+                }
+                if(spDrafted.get(0).size() == 0 || draftOrder == null){
+                    if (numTeams == 2)
+                        draftOrder = new ArrayList<>(Arrays.asList(0, 0, 1, 1));
+                    else if (numTeams == 3)
+                        draftOrder = new ArrayList<>(Arrays.asList(0, 0, 1, 1, 2, 2));
+                    else if (numTeams == 4)
+                        draftOrder = new ArrayList<>(Arrays.asList(0, 0, 1, 1, 2, 2, 3, 3));
 
-            }
+                }
                 draftOrderIndex = 0;
 
                 //Set window bar colour to the drafting team
@@ -251,16 +253,16 @@ public class DraftActivity extends AppCompatActivity implements DraftRecyclerAda
                 window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
                 switch (draftOrder.get(0)){
                     case 0:
-                        window.setStatusBarColor(getResources().getColor(R.color.darker_red,null));
+                        window.setStatusBarColor(getResources().getColor(R.color.red,null));
                         break;
                     case 1:
-                        window.setStatusBarColor(getResources().getColor(R.color.darker_blue,null));
+                        window.setStatusBarColor(getResources().getColor(R.color.blue,null));
                         break;
                     case 2:
-                        window.setStatusBarColor(getResources().getColor(R.color.darker_green,null));
+                        window.setStatusBarColor(getResources().getColor(R.color.green,null));
                         break;
                     case 3:
-                        window.setStatusBarColor(getResources().getColor(R.color.darker_yellow,null));
+                        window.setStatusBarColor(getResources().getColor(R.color.yellow,null));
                         break;
                 }
                 numToDraft = draftOrder.size();
@@ -464,16 +466,16 @@ public class DraftActivity extends AppCompatActivity implements DraftRecyclerAda
         window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
         switch(draftOrder.get(draftOrderIndex)){
         case 0:
-            window.setStatusBarColor(getResources().getColor(R.color.darker_red,null));
+            window.setStatusBarColor(getResources().getColor(R.color.red,null));
             break;
         case 1:
-            window.setStatusBarColor(getResources().getColor(R.color.darker_blue,null));
+            window.setStatusBarColor(getResources().getColor(R.color.blue,null));
             break;
         case 2:
-            window.setStatusBarColor(getResources().getColor(R.color.darker_green,null));
+            window.setStatusBarColor(getResources().getColor(R.color.green,null));
             break;
         case 3:
-            window.setStatusBarColor(getResources().getColor(R.color.darker_yellow,null));
+            window.setStatusBarColor(getResources().getColor(R.color.yellow,null));
             break;
         }
     }
@@ -600,6 +602,21 @@ public class DraftActivity extends AppCompatActivity implements DraftRecyclerAda
                 fightersNotDrafted.removeAll(spDrafted.get(0));
                 fightersNotDrafted.removeAll(spDrafted.get(1));
         }
+        Team t0 = ((ManagingApplication) getApplicationContext()).team0;
+        if (t0 != null && IntStream.of(t0.getPointers()).anyMatch(x -> x == -1))
+            t0.setPointers();
+
+        Team t1 = ((ManagingApplication) getApplicationContext()).team0;
+        if (t1 != null && IntStream.of(t1.getPointers()).anyMatch(x -> x == -1))
+            t1.setPointers();
+
+        Team t2 = ((ManagingApplication) getApplicationContext()).team0;
+        if (t2 != null && IntStream.of(t2.getPointers()).anyMatch(x -> x == -1))
+            t2.setPointers();
+
+        Team t3 = ((ManagingApplication) getApplicationContext()).team0;
+        if (t3 != null && IntStream.of(t3.getPointers()).anyMatch(x -> x == -1))
+            t3.setPointers();
 
         //check if we can go back to gameplay activity or if we have to call a new intent
         if(prevActivity != null && prevActivity.equals("MainActivity")) {

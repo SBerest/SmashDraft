@@ -1,9 +1,8 @@
 package com.example.smashdraft;
 
-
-
 import android.content.SharedPreferences;
 import android.util.Log;
+
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -19,8 +18,10 @@ public class Team implements Serializable, Comparable<Team>  {
     private final int[] pointers;
     private final int mNumRandoms;
     private int mNumSkips;
-    private String mGameMode;
-    private int randomLocation; //0 = no randoms, 1 = randoms first, 2 = randoms last.
+    private final String mGameMode;
+    private final int randomLocation; //0 = no randoms, 1 = randoms first, 2 = randoms last.
+    private boolean onRandoms;
+    private int randomsDone;
 
     Team(ArrayList<Fighter> fighters, int team, SharedPreferences sharedPreferences) {
         this.team = team;
@@ -31,85 +32,81 @@ public class Team implements Serializable, Comparable<Team>  {
         else if(team == 3) teamSizeString = "numYellow";
 
         this.teamSize = sharedPreferences.getInt(teamSizeString,2);
-        Log.d(TAG,teamSize+"");
         this.pointers = new int[this.teamSize];
         this.mNumRandoms = sharedPreferences.getInt("numRandoms",2);
         boolean randomAtEnd = sharedPreferences.getBoolean("randomEnd",true);
         this.mNumSkips = sharedPreferences.getInt("numSkips",0);
-        this.mGameMode = sharedPreferences.getString("gameMode","Draft As You Go");;
+        this.mGameMode = sharedPreferences.getString("gameMode","Draft As You Go");
+        this.randomLocation = randomAtEnd? 2 : 1;
+        this.onRandoms = randomAtEnd;
+        this.randomsDone = 0;
 
-        if(mNumRandoms == 0) randomLocation = 0;
-        randomLocation = randomAtEnd? 2 : 1;
-        if(randomLocation != 1)
-            if(mGameMode.equals("Columns")){
-                setPointersColumns();
-            }else if(mGameMode.equals("Draft As You Go")){
-                setPointersToOne();
-            }else{
-                setPointersDefault();
-            }
-        else{
-            setPointersToNegOne();
+        setPointers();
+    }
+
+    public void setPointers(){
+        if(mGameMode.equals("Columns")){
+            setPointersColumns();
+        }else if(mGameMode.equals("Draft As You Go")){
+            setPointersToOne();
+        }else{
+            setPointersDefault();
         }
     }
 
     private void setPointersToOne() {
-        switch (teamSize){
+        switch (this.teamSize){
             case 4:
-                pointers[3] = 3;
+                this.pointers[3] = 3;
             case 3:
-                pointers[2] = 2;
+                this.pointers[2] = 2;
             case 2:
-                pointers[1] = 1;
+                this.pointers[1] = 1;
             case 1:
-                pointers[0] = 0;
+                this.pointers[0] = 0;
         }
     }
 
     private void setPointersColumns() {
-        pointers[3] = 3;
-        pointers[2] = 2;
-        pointers[1] = 1;
-        pointers[0] = 0;
+        this.pointers[3] = 3;
+        this.pointers[2] = 2;
+        this.pointers[1] = 1;
+        this.pointers[0] = 0;
     }
 
     private void setPointersDefault() {
-        switch (teamSize){
+        switch (this.teamSize){
             case 4:
-                pointers[3] = fighters.size() - (fighters.size()/4);
+                this.pointers[3] = this.fighters.size() - (this.fighters.size()/4);
             case 3:
-                pointers[2] = fighters.size()/4;
+                this.pointers[2] = this.fighters.size()/4;
             case 2:
-                pointers[1] = fighters.size()-1;
+                this.pointers[1] = this.fighters.size()-1;
             case 1:
-                pointers[0] = 0;
+                this.pointers[0] = 0;
         }
+        Log.d(TAG,"Team:"+this.team+" pointers:"+ Arrays.toString(this.pointers)+" fighters:"+this.fighters);
     }
 
-    private void setPointersToNegOne(){
-        switch (teamSize) {
-            case 4:
-                pointers[3] = -1;
-            case 3:
-                pointers[2] = -1;
-            case 2:
-                pointers[1] = -1;
-            case 1:
-                pointers[0] = -1;
-        }
+    public String asString(){
+        return "Team: "+this.team+"Fighters: "+this.fighters;
     }
 
+    public int[] getPointers(){
+        return this.pointers;
+    }
     public int getTeamSize(){
         return this.teamSize;
     }
 
     public int getImageId(int num) {
+        Log.d(TAG,"pointers:"+ Arrays.toString(pointers));
         if(pointers[num] == -1){
             return R.drawable.img_00_question;
         }
-        if(pointers[num] < fighters.size())
-            return fighters.get(pointers[num]).getImageId();
-        return R.drawable.img_00_loading;
+        if(pointers[num] < this.fighters.size())
+            return this.fighters.get(pointers[num]).getImageId();
+        return R.drawable.img_00_question;
     }
 
     @Override
@@ -122,7 +119,7 @@ public class Team implements Serializable, Comparable<Team>  {
     }
 
     public int getWins() {
-        return wins;
+        return this.wins;
     }
 
     public void incWin() {
@@ -157,21 +154,20 @@ public class Team implements Serializable, Comparable<Team>  {
     }
 
     public void updatePointersFromWin() {
-        if(mGameMode.equals("Draft As You Go") || mGameMode.equals("Columns")){
-            for(int i = 0; i < teamSize; i++)
-                pointers[i] += teamSize;
+        if(onRandoms){
+            this.randomsDone += 1;
+            if(randomsDone >= mNumRandoms)
+                onRandoms = false;
         }
-        else{
-            if (randomLocation != 0) {
-                if ((randomLocation == 1 && wins < mNumRandoms) || (randomLocation == 2 && fighters.size() <= wins)) {
-                    setPointersToNegOne();
-                } else if (randomLocation == 1 && wins == mNumRandoms) {
-                    setPointersDefault();
-                } else {
-                    changePointers();
-                }
+        else {
+            if (mGameMode.equals("Draft As You Go") || mGameMode.equals("Columns")) {
+                for (int i = 0; i < teamSize; i++)
+                    pointers[i] += teamSize;
             } else {
-                changePointers();
+                if (randomLocation == 1 && wins == mNumRandoms)
+                    setPointersDefault();
+                else
+                    changePointers();
             }
         }
     }
@@ -181,33 +177,19 @@ public class Team implements Serializable, Comparable<Team>  {
             case 4:
                 pointers[3] -= 1;
                 if (pointers[3] < 0)
-                    pointers[3] = fighters.size() - 1;
+                    pointers[3] = this.fighters.size() - 1;
             case 3:
                 pointers[2] += 1;
-                if (pointers[2] >= fighters.size())
+                if (pointers[2] >= this.fighters.size())
                     pointers[2] = 0;
             case 2:
                 pointers[1] -= 1;
                 if (pointers[1] < 0)
-                    pointers[1] = fighters.size() - 1;
+                    pointers[1] = this.fighters.size() - 1;
             case 1:
                 pointers[0] += 1;
-                if (pointers[0] >= fighters.size())
+                if (pointers[0] >= this.fighters.size())
                     pointers[0] = 0;
-        }
-    }
-
-    public void addRandoms() {
-        Fighter random = new Fighter(R.drawable.img_00_question,"Random");
-        switch (randomLocation){
-            case 1:
-                for(int i = 0; i < mNumRandoms; i++)
-                    this.fighters.add(0,random);
-                break;
-            case 2:
-                for(int i = 0; i < mNumRandoms; i++)
-                    this.fighters.add(random);
-                break;
         }
     }
 
@@ -216,7 +198,7 @@ public class Team implements Serializable, Comparable<Team>  {
     }
 
     public boolean contains(Fighter someFighter) {
-        for(Fighter fighter:fighters){
+        for(Fighter fighter: this.fighters){
             if(someFighter.getName().equals(fighter.getName())){
                 return true;
             }

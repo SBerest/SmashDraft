@@ -13,6 +13,7 @@ public class ManagingApplication extends Application {
     ArrayList<Fighter> remainders = null;
     int winningTeamNum = -1;
     ArrayList<Fighter> winningTeamComp = null;
+    ArrayList<ArrayList<Team>> undoStack = null;
 
     int getFighter(Fighter fighter){
         if(team0 != null)

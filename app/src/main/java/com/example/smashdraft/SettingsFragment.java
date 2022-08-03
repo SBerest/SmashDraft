@@ -208,7 +208,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Prefer
                         break;
                     case 3:
                         numGreenPref.setMin(1);
-                        numGreenPref.setValue(1);
+                        numGreenPref.setValue(numGreenPref.getValue());
                         numYellowPref.setIcon(R.drawable.smash_grey);
                         numYellowPref.setMin(0);
                         numYellowPref.setValue(0);
@@ -217,9 +217,9 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Prefer
                         break;
                     default:
                         numGreenPref.setMin(1);
-                        numGreenPref.setValue(1);
+                        numGreenPref.setValue(numGreenPref.getValue());
                         numYellowPref.setMin(1);
-                        numYellowPref.setValue(1);
+                        numYellowPref.setValue(numYellowPref.getValue());
                         break;
                 }
                 balanceTeamValues();

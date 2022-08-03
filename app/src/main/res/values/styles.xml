@@ -18,4 +18,20 @@
         <item name="android:textColor">@color/white</item>
         <item name="android:windowBackground">@color/black</item>
     </style>
+
+    <style name="textStyle">
+        <item name="android:textColor">#ffffffff</item>
+        <item name="android:shadowColor">#111111</item>
+        <item name="android:shadowDx">10</item>
+        <item name="android:shadowDy">10</item>
+        <item name="android:shadowRadius">10</item>
+    </style>
+
+    <style name="characterStyle">
+        <item name="android:shadowColor">#ffffff</item>
+        <item name="android:shadowDx">200</item>
+        <item name="android:shadowDy">200</item>
+        <item name="android:shadowRadius">200</item>
+    </style>
+
 </resources>
